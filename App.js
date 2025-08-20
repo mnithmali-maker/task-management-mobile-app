@@ -26,6 +26,7 @@ import PrivacyPolicyScreen from "./screens/privacyPolicy/privacyPolicyScreen";
 import TermsAndConditionsScreen from "./screens/termsAndConditions/termsAndConditionsScreen";
 import FaqScreen from "./screens/faq/faqScreen";
 import AddNewScreen from "./screens/addNew/addNewScreen";
+import AddNewMemberScreen from "./screens/teamMember/teamMemberScreen";
 
 ExpoSplashScreen.preventAutoHideAsync();
 
@@ -76,6 +77,7 @@ const App = () => {
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="Team" component={TeamScreen} />
+          <Stack.Screen name="TeamMember" component={AddNewMemberScreen} />
           <Stack.Screen name="CreateTeam" component={CreateTeamScreen} />
           <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
           <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />

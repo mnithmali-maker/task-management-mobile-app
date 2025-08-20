@@ -89,6 +89,8 @@ const ProfileScreen = ({ navigation }) => {
                 {divider()}
                 {optionSort({ iconName: 'people-outline', option: 'Team', onPress: () => { navigation.push('Team') } })}
                 {divider()}
+                {optionSort({ iconName: 'people-outline', option: 'Team Member', onPress: () => { navigation.push('TeamMember') } })}
+                {divider()}
                 {optionSort({ iconName: 'reader-outline', option: 'Terms & condition', onPress: () => { navigation.push('TermsAndConditions') } })}
                 {divider()}
                 {optionSort({ iconName: 'warning-outline', option: 'Privacy policy', onPress: () => { navigation.push('PrivacyPolicy') } })}
