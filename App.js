@@ -27,6 +27,7 @@ import TermsAndConditionsScreen from "./screens/termsAndConditions/termsAndCondi
 import FaqScreen from "./screens/faq/faqScreen";
 import AddNewScreen from "./screens/addNew/addNewScreen";
 import AddNewMemberScreen from "./screens/teamMember/teamMemberScreen";
+import TeamMemberList from "./screens/teamMember/teamMemberList";
 
 ExpoSplashScreen.preventAutoHideAsync();
 
@@ -35,12 +36,11 @@ LogBox.ignoreAllLogs();
 const Stack = createStackNavigator();
 
 const App = () => {
-
   const [fontsLoaded] = useFonts({
-    'Poppins-Regular': require("./assets/fonts/Poppins-Regular.ttf"),
-    'Poppins-Medium': require("./assets/fonts/Poppins-Medium.ttf"),
-    'Poppins-SemiBold': require("./assets/fonts/Poppins-SemiBold.ttf"),
-    'Poppins-Bold': require("./assets/fonts/Poppins-Bold.ttf"),
+    "Poppins-Regular": require("./assets/fonts/Poppins-Regular.ttf"),
+    "Poppins-Medium": require("./assets/fonts/Poppins-Medium.ttf"),
+    "Poppins-SemiBold": require("./assets/fonts/Poppins-SemiBold.ttf"),
+    "Poppins-Bold": require("./assets/fonts/Poppins-Bold.ttf"),
   });
 
   const onLayoutRootView = useCallback(async () => {
@@ -78,9 +78,13 @@ const App = () => {
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="Team" component={TeamScreen} />
           <Stack.Screen name="TeamMember" component={AddNewMemberScreen} />
+          {/* <Stack.Screen name="TeamMember" component={TeamMemberList} /> */}
           <Stack.Screen name="CreateTeam" component={CreateTeamScreen} />
           <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-          <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
+          <Stack.Screen
+            name="TermsAndConditions"
+            component={TermsAndConditionsScreen}
+          />
           <Stack.Screen name="Faq" component={FaqScreen} />
         </Stack.Navigator>
       </NavigationContainer>
