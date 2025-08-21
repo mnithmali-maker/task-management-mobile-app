@@ -690,7 +690,7 @@ const AddNewScreen = ({ navigation, route }) => {
       formData.append("project", JSON.stringify(project));
 
       const response = await fetch(
-        "http://192.168.8.103:8080/api/v1/project/save",
+        "http://192.168.1.14:8080/api/v1/project/save",
         {
           method: "POST",
           body: formData,
