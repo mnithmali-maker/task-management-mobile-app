@@ -77,8 +77,8 @@ const App = () => {
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="Team" component={TeamScreen} />
-          <Stack.Screen name="TeamMember" component={AddNewMemberScreen} />
-          {/* <Stack.Screen name="TeamMember" component={TeamMemberList} /> */}
+          <Stack.Screen name="AddTeamMember" component={AddNewMemberScreen} />
+          <Stack.Screen name="TeamMember" component={TeamMemberList} />
           <Stack.Screen name="CreateTeam" component={CreateTeamScreen} />
           <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
           <Stack.Screen
