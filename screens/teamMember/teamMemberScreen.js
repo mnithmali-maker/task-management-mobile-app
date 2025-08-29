@@ -63,8 +63,8 @@ const AddNewMemberScreen = ({ navigation }) => {
   const validationSchema = Yup.object().shape({
     memberName: Yup.string().required("Member name is required"),
     email: Yup.string().email("Invalid email").required("Email is required"),
-    attachment: Yup.object().required("Attachment is required"),
-    selectedTeams: Yup.array().min(1, "Select at least one team"),
+    // attachment: Yup.object().required("Attachment is required"),
+    // selectedTeams: Yup.array().min(1, "Select at least one team"),
   });
 
   const getMimeType = (path) => {
@@ -125,7 +125,7 @@ const AddNewMemberScreen = ({ navigation }) => {
         name: safeName,
         type: mimeType,
       });
-
+      console.log("im vyeeeeeeeeeeeee");
       const member = {
         id: null,
         name: values.memberName,
@@ -133,12 +133,12 @@ const AddNewMemberScreen = ({ navigation }) => {
       };
 
       formData.append("member", JSON.stringify(member));
-
-      const response = await fetch("http://192.168.1.14:8080/api/v1/member", {
+      console.log("im vyeeeeeeeeeeeee4343");
+      const response = await fetch("http://192.168.1.12:8080/api/v1/member", {
         method: "POST",
         body: formData,
       });
-
+      console.log("im 5555");
       const result = await response.json();
       console.warn(result);
     }
@@ -149,7 +149,7 @@ const AddNewMemberScreen = ({ navigation }) => {
         memberName: "",
         email: "",
         attachment: null,
-        selectedTeams: [],
+        // selectedTeams: [],
         isActive: true,
       }}
       validationSchema={validationSchema}
