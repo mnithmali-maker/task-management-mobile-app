@@ -7,7 +7,7 @@ import { Button } from '../../components/button';
 
 const EditProfileScreen = ({ navigation }) => {
 
-    const [userName, setUserName] = useState('Robert fox');
+    const [userName, setUserName] = useState('Nipuni Madushani');
     const [email, setEmail] = useState('Robertfox@mail.com');
     const [mobileNo, setMobileNo] = useState('+91 1234567890');
     const [showOptionsSheet, setShowOptionsSheet] = useState(false);

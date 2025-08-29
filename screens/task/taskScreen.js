@@ -327,7 +327,7 @@ const TaskScreen = ({ navigation, route }) => {
             />
             <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
               <Text style={{ ...Fonts.whiteColor18SemiBold }}>
-                Hello Robert fox
+                Hello Nipuni Madushani
               </Text>
               <Text style={{ ...Fonts.whiteColor15Medium, opacity: 0.8, }}>
                 Good morning

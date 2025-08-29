@@ -118,7 +118,7 @@ const commentsList = [
     {
         id: '2',
         image: require('../../assets/images/users/user3.png'),
-        name: 'Robert Fox',
+        name: 'Nipuni Madushani',
         profession: 'Back-end developer',
         time: '1 hour ago',
         comment: 'Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi'
