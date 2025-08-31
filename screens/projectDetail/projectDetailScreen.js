@@ -202,17 +202,21 @@ const commentsList = [
 ];
 
 const ProjectDetailScreen = ({ navigation, route }) => {
+  const item = route.params.item;
+
+  console.warn(item);
   useEffect(() => {
     if (route.params?.members) {
       setteamMembers([...teamMembers, ...route.params.members]);
     }
   }, [route.params?.members]);
+
   const updateStatus = async (projectId, status) => {
     try {
       // console.log("Calling:", `${API_URL}/project/updateStatus/${projectId}/${status}`);
 
       const response = await fetch(
-        `http:192.168.1.12:8080/api/v1/project/updateStatus/${projectId}/${status}`,
+        `http:192.168.8.101:8080/api/v1/project/updateStatus/${projectId}/${status}`,
         {
           method: "PUT",
           headers: {
@@ -243,7 +247,6 @@ const ProjectDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  const item = route.params.item;
   const category = route.params.category;
   //  let optionsList;
 
@@ -265,9 +268,9 @@ const ProjectDetailScreen = ({ navigation, route }) => {
   const [index, setIndex] = useState(0);
   const routes = [
     { key: "first", title: "All task" },
-    { key: "second", title: "File" },
-    { key: "third", title: "Team" },
-    { key: "forth", title: "Comments" },
+    // { key: "second", title: "File" },
+    // { key: "third", title: "Team" },
+    // { key: "forth", title: "Comments" },
   ];
   const [showDeleteDialog, setshowDeleteDialog] = useState(false);
   const [showCompleteDialog, setshowCompleteDialog] = useState(false);
@@ -336,7 +339,7 @@ const ProjectDetailScreen = ({ navigation, route }) => {
     const renderScene = ({ route }) => {
       switch (route.key) {
         case "first":
-          return <AllTasks navigation={navigation} />;
+          return <AllTasks navigation={navigation} item={item} />;
         case "second":
           return <Files />;
         case "third":
@@ -814,12 +817,134 @@ const Files = () => {
 };
 
 const AllTasks = (props) => {
+  const { navigation, item } = props;
   const [selctedItemId, setselctedItemId] = useState();
   const [showMenu, setshowMenu] = useState(false);
   const [showDeleteDialog, setshowDeleteDialog] = useState(false);
-  const [tasks, settasks] = useState(progressTaskList);
-
+  const [tasks, settasks] = useState([]);
   const optionsList = ["Delete task", "Share task", "Copy link"];
+
+  const CircleColors = {
+    primaryColor: "#9672FB",
+
+    purpleColor: "#A28FD8",
+    greenColor: "#39BDA8",
+    pitchColor: "#FC8C8C",
+    pinkColor: "#D88CFC",
+    woodenColor: "#DA9887",
+    // lightWoodenColor: '#E5D3C4',
+    parrotColor: "#66C390",
+    // lightParrotColor: '#BADACA',
+    tomatoColor: "#E5716E",
+    // lightTomatoColor: '#DFB3B5',
+    blueColor: "#6982E0",
+    // lightBlueColor: '#DAE2E8',
+    yellowColor: "#D3BD46",
+    // lightYellowColor: '#DAE2E8',
+    darkBlueColor: "#1E4799",
+    darkGreenColor: "#1E996D",
+    redColor: "#EF1717",
+  };
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      const fetchActiveProjects = async () => {
+        console.warn("fetch kkkk");
+        let id = item?.id;
+        console.warn("id:" + id);
+        try {
+          const response = await fetch(
+            `http://192.168.8.101:8080/api/v1/task/${id}`
+          );
+          const result = await response.json();
+
+          if (result.status === 200) {
+            const projects = result.payload[0]; // actual list from backend
+            console.warn("awa:" + projects.length);
+            console.warn(projects);
+
+            const colorValues = Object.values(CircleColors);
+
+            // Function to pick a random color
+            function getRandomColor() {
+              const index = Math.floor(Math.random() * colorValues.length);
+              return colorValues[index];
+            }
+
+            const formattedProjects = projects.map((p) => {
+              // normalize today
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+
+              const endDate = new Date(p.endDate);
+              endDate.setHours(0, 0, 0, 0);
+
+              let deadlineText = null;
+              let deadlineColor = Colors.grayColor; // default
+              let deadlinePriority = 2;
+
+              if (endDate < today) {
+                deadlineText = "⚠️ Due date has passed";
+                deadlineColor = Colors.redColor;
+                deadlinePriority = 0;
+              } else if (endDate.getTime() === today.getTime()) {
+                deadlineText = "⏰ Due date is today";
+                deadlineColor = Colors.darkGreenColor;
+                deadlinePriority = 1; // 👈 second priority
+              } else {
+                deadlineText = "On Track"; // optional
+                deadlineColor = Colors.grayColor;
+                deadlinePriority = 2; // 👈 lowest priority
+              }
+              const isDeadlinePassed = today >= endDate;
+              return {
+                id: p.taskId,
+                title: p.name,
+                description: p.taskStatus,
+                taskStatus: p.taskStatus,
+                progress: p.taskStatus === "COMPLETED" ? 1 : 0,
+                date: new Date(p.startDate).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                }),
+                endDate: new Date(p.endDate).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                }),
+                fill: getRandomColor(),
+                unfill: "rgba(218, 152, 135, 0.16)",
+                isDeadlinePassed: isDeadlinePassed,
+                deadlineText: deadlineText, // 👈 add text here
+                deadlineColor: deadlineColor, // 👈 and color here
+              };
+            });
+
+            // sort tasks by priority first, then by actual date
+            // const sortedProjects = formattedProjects.sort((a, b) => {
+            //   if (a.deadlinePriority !== b.deadlinePriority) {
+            //     return a.deadlinePriority - b.deadlinePriority; // passed → today → future
+            //   }
+            //   return new Date(a.endDate) - new Date(b.endDate); // if same priority, sort by date
+            // });
+
+            settasks(formattedProjects);
+          } else {
+            settasks([]);
+            console.warn(
+              result.errorMessages?.[0] || "No active projects found"
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching active projects:", error);
+        }
+      };
+
+      fetchActiveProjects(); // refresh whenever screen is focused
+    });
+
+    return unsubscribe;
+  }, [navigation, item]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -879,6 +1004,60 @@ const AllTasks = (props) => {
             </Text>
             <Text numberOfLines={1} style={{ ...Fonts.grayColor14Medium }}>
               {item.description}
+            </Text>
+            {item?.isDeadlinePassed && (
+              <Text
+                style={{
+                  color: item?.deadlineColor,
+                  marginTop: 4,
+                  fontSize: 12,
+                }}
+              >
+                {item?.deadlineText}
+              </Text>
+            )}
+          </View>
+          {/* <View style={{ flexDirection: "row", flex: 1 }}>
+            <MaterialIcons
+              name="calendar-today"
+              color={Colors.grayColor}
+              size={14}
+            />
+            <Text
+              numberOfLines={1}
+              style={{
+                flex: 1,
+                color: item?.isDeadlinePassed
+                  ? item.deadlineColor
+                  : Fonts.grayColor12SemiBold.color,
+                fontSize: Fonts.grayColor12SemiBold.fontSize,
+                fontWeight: Fonts.grayColor12SemiBold.fontWeight,
+                marginLeft: Sizes.fixPadding - 5.0,
+              }}
+            >
+              {item.date}
+            </Text>
+          </View> */}
+
+          <View style={{ flexDirection: "row", flex: 1 }}>
+            <MaterialIcons
+              name="calendar-today"
+              color={Colors.grayColor}
+              size={14}
+            />
+            <Text
+              numberOfLines={1}
+              style={{
+                flex: 1,
+                color: item?.isDeadlinePassed
+                  ? item.deadlineColor
+                  : Fonts.grayColor12SemiBold.color,
+                fontSize: Fonts.grayColor12SemiBold.fontSize,
+                fontWeight: Fonts.grayColor12SemiBold.fontWeight,
+                marginLeft: Sizes.fixPadding - 5.0,
+              }}
+            >
+              {item.date}
             </Text>
           </View>
           <Menu

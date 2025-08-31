@@ -71,6 +71,7 @@ const AddNewScreen = ({ navigation, route }) => {
     selectedProject: null,
     selectedTeam: "",
     projectStatus: "",
+    taskStatus: "",
     status: true,
   };
   const [loadValues, setLoadValues] = useState(null);
@@ -85,7 +86,7 @@ const AddNewScreen = ({ navigation, route }) => {
 
           // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
           const response = await fetch(
-            "http:192.168.1.12:8080/api/v1/project/"
+            "http:192.168.8.101:8080/api/v1/project/"
           );
           const result = await response.json();
           // console.warn(result);
@@ -115,7 +116,7 @@ const AddNewScreen = ({ navigation, route }) => {
     if (mode == "edit" && from == "project") {
       const fetchProjects = async () => {
         setisLoading(true);
-        console.warn(item);
+        // console.warn(item);
         console.warn("get existing project...");
         try {
           const projectId = item?.id;
@@ -124,7 +125,7 @@ const AddNewScreen = ({ navigation, route }) => {
 
           // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
           const response = await fetch(
-            `http:192.168.1.12:8080/api/v1/project/${projectId}`
+            `http://192.168.8.101:8080/api/v1/project/${projectId}`
           );
           const result = await response.json();
           // console.warn(result);
@@ -138,12 +139,12 @@ const AddNewScreen = ({ navigation, route }) => {
               const [year, month, day] = dateStr.split("-"); // "2025-08-14" → ["2025","08","14"]
               return `${day}/${month}/${year}`;
             };
-            console.warn(values.attachments);
+            // console.warn(values.attachments);
             // Map backend attachments into your frontend format
             const savedAttachments = (values.attachments || []).map(
               (att, index) => ({
                 name: att.imageOriginalName || `file_${index}`, // backend field
-                uri: "http://192.168.1.12:8080/uploads/" + att.filePath, // build correct URL
+                uri: "http://192.168.8.101:8080/uploads/" + att.filePath, // build correct URL
                 type: att.fileType || "application/octet-stream",
                 saved: true, // mark as already saved
               })
@@ -160,9 +161,22 @@ const AddNewScreen = ({ navigation, route }) => {
               // selectedProject: null,
               selectedTeam: "",
             };
-            console.warn(initialValues);
+            // console.warn(initialValues);
             setLoadValues(initialValues);
             setAttachments(savedAttachments);
+            console.warn(values?.teamMembers);
+            const membersList = (values?.teamMembers || []).map((item) => ({
+              id: item.id,
+              name: item.name,
+              profession: item.designation,
+              selected: false,
+              image: item.attachment
+                ? `data:${item.attachment.mimeType};base64,${item.attachment.data}`
+                : null,
+            }));
+            setSelectedMembers(membersList);
+
+            // setSelectedMembers(values?.teamMembers);
             // const projectNames = result.payload[0].map((item) => item.name);
             // console.warn(projectNames);
             // setSelectedProject(result.payload[0]); // because payload is wrapped in a list
@@ -181,13 +195,40 @@ const AddNewScreen = ({ navigation, route }) => {
     }
   }, []);
 
-  const teamsList = [
-    "Designer team",
-    "Developer team",
-    "HR team",
-    "Marketing team",
-    "Management team",
-  ];
+  useEffect(() => {
+    console.warn("called member...");
+
+    const fetchTeamMembers = async () => {
+      console.warn("member...");
+      try {
+        // const url = `${API_URL}/project/`;
+        // console.log(url);
+        const status = true;
+        // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
+        const response = await fetch(
+          `http://192.168.8.101:8080/api/v1/member/status/${status}`
+        );
+        const result = await response.json();
+        console.warn(result);
+
+        if (result.status === 200) {
+          console.warn("Suucess");
+          // console.warn(result.payload[0]);
+          // const projectNames = result.payload[0].map((item) => item.name);
+          // console.warn(projectNames);
+          // setSelectedProject(result.payload[0]); // because payload is wrapped in a list
+        } else {
+          console.warn(result.errorMessages?.[0] || "No records found");
+        }
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      } finally {
+        setisLoading(false);
+      }
+      fetchTeamMembers();
+    };
+  }, []);
+
   const validationSchema = Yup.object().shape({
     taskName:
       from === "task"
@@ -569,7 +610,8 @@ const AddNewScreen = ({ navigation, route }) => {
   }
   const handleAdd = async (values) => {
     console.log("ddddd");
-    console.warn(values);
+    // console.warn(values);
+    // console.warn(selectedMembers);
     setisLoading(true);
 
     if (from == "project") {
@@ -585,7 +627,6 @@ const AddNewScreen = ({ navigation, route }) => {
           } else {
             fileUri = file.uri;
           }
-
           console.warn(fileUri);
           const mimeType = getMimeType(file.name || file.uri);
           console.warn(mimeType);
@@ -596,7 +637,7 @@ const AddNewScreen = ({ navigation, route }) => {
             // console.warn(`❌ Skipping invalid file at index ${i}`, file);
             continue;
           }
-          console.warn(safeName);
+          // console.warn(safeName);
 
           formData.append("files", {
             uri: fileUri,
@@ -604,7 +645,7 @@ const AddNewScreen = ({ navigation, route }) => {
             type: mimeType,
           });
         }
-        console.warn(formData);
+        // console.warn(formData);
         // Convert "dd/mm/yyyy" strings to ISO format "yyyy-MM-dd"
         const parseDMY = (str) => {
           const [day, month, year] = str.split("/").map(Number);
@@ -627,16 +668,17 @@ const AddNewScreen = ({ navigation, route }) => {
           // startDate:values?.startingDate,
           endDate: formatDate(parseDMY(values?.endingDate)),
           projectStatus: mode == "edit" ? values?.projectStatus : "PENDING",
-          status:values?.status
+          status: values?.status,
+          teamMembers: selectedMembers.map((m) => m.id),
           // endDate:values?.endingDate,
           // team: selectedTeam,
         };
 
         formData.append("project", JSON.stringify(project));
         // console.warn(formData);
-        // const response = await fetch("http:192.168.8.102:8080/api/v1/project/");
+        // const response = await fetch("http:192.168.8.101:8080/api/v1/project/");
         const response = await fetch(
-          "http:192.168.1.12:8080/api/v1/project/save",
+          "http://192.168.8.101:8080/api/v1/project/save",
           {
             method: "POST",
             body: formData,
@@ -694,9 +736,17 @@ const AddNewScreen = ({ navigation, route }) => {
         let formData = new FormData();
         for (let i = 0; i < attachments.length; i++) {
           const file = attachments[i];
-
-          const fileUri = file.uri;
+          let fileUri = "";
+          // if (file.saved) continue;
+          if (file.saved) {
+            const localUri = await downloadToCache(file.uri, file.name);
+            fileUri = localUri;
+          } else {
+            fileUri = file.uri;
+          }
+          console.warn(fileUri);
           const mimeType = getMimeType(file.name || file.uri);
+          console.warn(mimeType);
           const safeName =
             file.name?.replace(/[^a-zA-Z0-9._-]/g, "_") ||
             `file_${Date.now()}_${i}`;
@@ -704,6 +754,7 @@ const AddNewScreen = ({ navigation, route }) => {
             // console.warn(`❌ Skipping invalid file at index ${i}`, file);
             continue;
           }
+          // console.warn(safeName);
 
           formData.append("files", {
             uri: fileUri,
@@ -725,22 +776,22 @@ const AddNewScreen = ({ navigation, route }) => {
           return `${year}-${month}-${day}`;
         };
 
-        const project = {
+        const task = {
+          taskId: mode == "edit" ? item?.id : "",
           name: values?.taskName,
-          // project: values?.selectedProject,
           startDate: formatDate(parseDMY(values?.startingDate)),
-
-          // startDate:values?.startingDate,
           endDate: formatDate(parseDMY(values?.endingDate)),
           // endDate:values?.endingDate,
           // team: selectedTeam,
           project: values?.selectedProject?.projectId,
-          status:values?.status
+          status: values?.status,
+          taskStatus: mode == "edit" ? values?.taskStatus : "PENDING",
+          teamMembers: selectedMembers.map((m) => m.id),
         };
-        formData.append("task", JSON.stringify(project));
+        formData.append("task", JSON.stringify(task));
         console.warn(formData);
 
-        const response = await fetch("http:192.168.1.12/api/v1/task/save", {
+        const response = await fetch("http://192.168.8.101:8080/api/v1/task/save", {
           method: "POST",
           body: formData,
         });
@@ -934,7 +985,7 @@ const AddNewScreen = ({ navigation, route }) => {
                                 textStyle={{ ...Fonts.blackColor16Medium }}
                                 onPress={() => {
                                   setFieldValue("selectedProject", option);
-                                  setSelectedTeam(option);
+                                  // setSelectedTeam(option);
                                   setShowMenu(false);
                                 }}
                               >
@@ -1101,7 +1152,7 @@ const AddNewScreen = ({ navigation, route }) => {
                         {selectedMembers.slice(0, 4).map((item, index) => (
                           <Image
                             key={index}
-                            source={item.image}
+                            source={{ uri: item.image }}
                             style={{
                               ...styles.selectedMemberStyle,
                               left: -(index * 6),
@@ -1155,7 +1206,9 @@ const AddNewScreen = ({ navigation, route }) => {
                     }}
                     thumbColor={Colors.whiteColor}
                   />
-                  <Text style={{ marginLeft: 170, ...Fonts.blackColor15Medium }}>
+                  <Text
+                    style={{ marginLeft: 170, ...Fonts.blackColor15Medium }}
+                  >
                     {values.status ? "Active" : "Inactive"}
                   </Text>
                 </View>

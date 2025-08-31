@@ -34,69 +34,6 @@ const dummyMembers = [
   require("../../assets/images/users/user8.png"),
 ];
 
-const activeProjectsList = [
-  {
-    id: "1",
-    title: "Shopping app project",
-    date: "25 feb 2023",
-    taskCount: "15 task",
-    progress: 30,
-    members: dummyMembers.slice(0, 6),
-    fill: Colors.woodenColor,
-    unfill: "rgba(218, 152, 135, 0.16)",
-  },
-  {
-    id: "2",
-    title: "Food delivery app project",
-    date: "22 feb 2023",
-    taskCount: "15 task",
-    progress: 50,
-    members: dummyMembers.slice(0, 5),
-    fill: Colors.parrotColor,
-    unfill: "rgba(102, 195, 144, 0.16)",
-  },
-  {
-    id: "3",
-    title: "5 star hotel website",
-    date: "22 feb 2023",
-    taskCount: "10 task",
-    progress: 60,
-    members: dummyMembers.slice(0, 7),
-    fill: Colors.tomatoColor,
-    unfill: "rgba(229, 113, 110, 0.16)",
-  },
-  {
-    id: "4",
-    title: "Student tracking app",
-    date: "9 feb 2023",
-    taskCount: "15 task",
-    progress: 60,
-    members: dummyMembers.slice(0, 8),
-    fill: Colors.blueColor,
-    unfill: "rgba(124, 146, 228, 0.16)",
-  },
-  {
-    id: "5",
-    title: "PDF scanner app project",
-    date: "8 feb 2023",
-    taskCount: "10 task",
-    progress: 80,
-    members: dummyMembers.slice(0, 9),
-    fill: Colors.woodenColor,
-    unfill: "rgba(218, 152, 135, 0.16)",
-  },
-  {
-    id: "6",
-    title: "Ecommerce app project",
-    date: "9 feb 2023",
-    taskCount: "15 task",
-    progress: 90,
-    members: dummyMembers.slice(0, 6),
-    fill: Colors.tomatoColor,
-    unfill: "rgba(229, 113, 110, 0.16)",
-  },
-];
-
 const completedProjectsList = [
   {
     id: "1",
@@ -174,27 +111,82 @@ const ProjectScreen = ({ navigation, route }) => {
         let projectStatus = "PENDING";
         try {
           const response = await fetch(
-            `http:192.168.1.12:8080/api/v1/project/active/${projectStatus}`
+            `http:192.168.8.101:8080/api/v1/project/active/${projectStatus}`
           );
           const result = await response.json();
 
           if (result.status === 200) {
             const projects = result.payload[0]; // actual list from backend
-            console.warn(projects);
-            const formattedProjects = projects.map((p, index) => ({
-              id: p.projectId, // or index + 1
-              title: p.name,
-              date: new Date(p.startDate).toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              }),
-              taskCount: p.taskCount ? `${p.taskCount} task` : "5 task",
-              progress: p.progress || 30,
-              members: dummyMembers.slice(0, p.membersCount || 5),
-              fill: Colors.tomatoColor,
-              unfill: "rgba(218, 152, 135, 0.16)",
-            }));
+            // console.warn(projects);
+            // const formattedProjects = projects.map((p, index) => ({
+
+            //   id: p.projectId, // or index + 1
+            //   title: p.name,
+            //   date: new Date(p.startDate).toLocaleDateString("en-GB", {
+            //     day: "2-digit",
+            //     month: "short",
+            //     year: "numeric",
+            //   }),
+            //   taskCount: `${p.taskCount.length} task`,
+            //   progress: p.progress || 30,
+            //   members: dummyMembers.slice(0, p.membersCount || 5),
+            //   fill: Colors.tomatoColor,
+            //   unfill: "rgba(218, 152, 135, 0.16)",
+            // }));
+            const formattedProjects = projects.map((p, index) => {
+              const taskCountMap = p.taskCount || {};
+              const totalTasks = Object.values(taskCountMap).reduce(
+                (sum, count) => sum + count,
+                0
+              );
+              const completedTasks = taskCountMap["COMPLETED"] || 0; // get completed tasks
+              const progress =
+                totalTasks > 0
+                  ? Math.round((completedTasks / totalTasks) * 100)
+                  : 0;
+              const progressColor =
+                progress === 100 ? Colors.greenColor : Colors.darkBlueColor;
+
+              const today = new Date();
+              today.setHours(0, 0, 0, 0); // normalize today
+
+              const endDate = new Date(p.endDate);
+              endDate.setHours(0, 0, 0, 0);
+
+              let deadlineText = null;
+              let deadlineColor = null;
+
+              if (endDate < today) {
+                deadlineText = " ⚠️ Due date has passed";
+                deadlineColor = Colors.redColor;
+              } else if (endDate.getTime() === today.getTime()) {
+                deadlineText = "⏰ Due date is today";
+                deadlineColor = Colors.darkGreenColor;
+              }
+
+              // const today = new Date();
+              // const endDate = new Date(p.endDate); // assuming item.endDate is in ISO format
+              const isDeadlinePassed = today >= endDate;
+              return {
+                id: p.projectId, // or index + 1
+                title: p.name,
+                date: new Date(p.endDate).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                }),
+
+                taskCount: `${totalTasks} task${totalTasks > 1 ? "s" : ""}`,
+                progress: progress,
+                // members: dummyMembers.slice(0, p.membersCount || 5),
+                fill: progressColor,
+                unfill: "rgba(218, 152, 135, 0.16)",
+                isDeadlinePassed: isDeadlinePassed,
+                deadlineText: deadlineText,
+                deadlineColor: deadlineColor,
+              };
+            });
+
             console.warn(formattedProjects);
             setactiveProjects(formattedProjects);
             // if backend wraps with Collections.singletonList(response)
@@ -216,11 +208,122 @@ const ProjectScreen = ({ navigation, route }) => {
     return unsubscribe;
   }, [navigation]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      const fetchActiveProjects = async () => {
+        console.warn("fetch");
+        let projectStatus = "COMPLETED";
+        try {
+          const response = await fetch(
+            `http:192.168.8.101:8080/api/v1/project/active/${projectStatus}`
+          );
+          const result = await response.json();
+
+          if (result.status === 200) {
+            const projects = result.payload[0]; // actual list from backend
+            // console.warn(projects);
+            // const formattedProjects = projects.map((p, index) => ({
+
+            //   id: p.projectId, // or index + 1
+            //   title: p.name,
+            //   date: new Date(p.startDate).toLocaleDateString("en-GB", {
+            //     day: "2-digit",
+            //     month: "short",
+            //     year: "numeric",
+            //   }),
+            //   taskCount: `${p.taskCount.length} task`,
+            //   progress: p.progress || 30,
+            //   members: dummyMembers.slice(0, p.membersCount || 5),
+            //   fill: Colors.tomatoColor,
+            //   unfill: "rgba(218, 152, 135, 0.16)",
+            // }));
+            const formattedProjects = projects.map((p, index) => {
+              const taskCountMap = p.taskCount || {};
+              const totalTasks = Object.values(taskCountMap).reduce(
+                (sum, count) => sum + count,
+                0
+              );
+              const completedTasks = taskCountMap["COMPLETED"] || 0; // get completed tasks
+              const progress =
+                totalTasks > 0
+                  ? Math.round((completedTasks / totalTasks) * 100)
+                  : 0;
+              const colorValues = Object.values(Colors);
+
+              // Function to pick a random color
+              function getRandomColor() {
+                const index = Math.floor(Math.random() * colorValues.length);
+                return colorValues[index];
+              }
+              // const progressColor =
+              //   progress === 100 ? Colors.greenColor : Colors.darkBlueColor;
+
+              // const today = new Date();
+              // today.setHours(0, 0, 0, 0); // normalize today
+
+              // const endDate = new Date(p.endDate);
+              // endDate.setHours(0, 0, 0, 0);
+
+              // let deadlineText = null;
+              // let deadlineColor = null;
+
+              // if (endDate < today) {
+              //   deadlineText = " ⚠️ Due date has passed";
+              //   deadlineColor = Colors.redColor;
+              // } else if (endDate.getTime() === today.getTime()) {
+              //   deadlineText = "⏰ Due date is today";
+              //   deadlineColor = Colors.darkGreenColor;
+              // }
+
+              // const today = new Date();
+              // const endDate = new Date(p.endDate); // assuming item.endDate is in ISO format
+              // const isDeadlinePassed = today >= endDate;
+              //  const index = Math.floor(Math.random() * progressColors.length);
+
+              return {
+                id: p.projectId, // or index + 1
+                title: p.name,
+                date: new Date(p.endDate).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                }),
+
+                taskCount: `${totalTasks} task${totalTasks > 1 ? "s" : ""}`,
+                progress: progress,
+                // members: dummyMembers.slice(0, p.membersCount || 5),
+                fill: getRandomColor(),
+                unfill: "rgba(218, 152, 135, 0.16)",
+                // // isDeadlinePassed: isDeadlinePassed,
+                // deadlineText: deadlineText,
+                // deadlineColor: deadlineColor,
+              };
+            });
+
+            console.warn(formattedProjects);
+            setcompleteProjects(formattedProjects);
+            // if backend wraps with Collections.singletonList(response)
+            // then result.payload[0] is the actual list
+            //   setProjects(result.payload[0]);
+          } else {
+            setcompleteProjects([]);
+            console.warn(
+              result.errorMessages?.[0] || "No active projects found"
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching active projects:", error);
+        }
+      };
+
+      fetchActiveProjects(); // refresh whenever screen is focused
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   const [index, setIndex] = useState(0);
   const [activeProjects, setactiveProjects] = useState([]);
-  const [completeProjects, setcompleteProjects] = useState(
-    completedProjectsList
-  );
+  const [completeProjects, setcompleteProjects] = useState([]);
 
   //   useEffect(() => {
 
@@ -232,7 +335,6 @@ const ProjectScreen = ({ navigation, route }) => {
       {projectAndTaskInfo()}
       {tabBarInfo()}
       {addButton()}
-      
     </View>
   );
 
@@ -452,7 +554,7 @@ const Complete = (props) => {
               </View>
             </View>
           </View>
-          <View
+          {/* <View
             style={{
               ...CommonStyles.rowAlignCenter,
               marginRight:
@@ -479,7 +581,7 @@ const Complete = (props) => {
                 </Text>
               </View>
             ) : null}
-          </View>
+          </View> */}
         </View>
         <View
           style={{
@@ -550,8 +652,17 @@ const Active = (props) => {
             <Text numberOfLines={1} style={{ ...Fonts.blackColor16Medium }}>
               {item.title}
             </Text>
-
-            
+            {item?.isDeadlinePassed && (
+              <Text
+                style={{
+                  color: item?.deadlineColor,
+                  marginTop: 4,
+                  fontSize: 12,
+                }}
+              >
+                {item?.deadlineText}
+              </Text>
+            )}
             <View
               style={{
                 ...CommonStyles.rowAlignCenter,
@@ -568,7 +679,11 @@ const Active = (props) => {
                   numberOfLines={1}
                   style={{
                     flex: 1,
-                    ...Fonts.grayColor12SemiBold,
+                    color: item?.isDeadlinePassed
+                      ? item.deadlineColor
+                      : Fonts.grayColor12SemiBold.color,
+                    fontSize: Fonts.grayColor12SemiBold.fontSize,
+                    fontWeight: Fonts.grayColor12SemiBold.fontWeight,
                     marginLeft: Sizes.fixPadding - 5.0,
                   }}
                 >
@@ -593,25 +708,25 @@ const Active = (props) => {
                   {item.taskCount}
                 </Text>
                 <Touchable
-              onPress={() => {
-                props.navigation.push("AddNew", {
-                  from: "project",
-                  mode: "edit",
-                  project: item,
-                });
-              }}
-              // style={{ marginHorizontal: }}
-            >
-              <MaterialIcons
-                name="edit"
-                size={22}
-                color={Colors.primaryColor}
-              />
-            </Touchable>
+                  onPress={() => {
+                    props.navigation.push("AddNew", {
+                      from: "project",
+                      mode: "edit",
+                      project: item,
+                    });
+                  }}
+                  // style={{ marginHorizontal: }}
+                >
+                  <MaterialIcons
+                    name="edit"
+                    size={22}
+                    color={Colors.primaryColor}
+                  />
+                </Touchable>
               </View>
             </View>
           </View>
-          <View
+          {/* <View
             style={{
               ...CommonStyles.rowAlignCenter,
               marginRight:
@@ -638,7 +753,7 @@ const Active = (props) => {
                 </Text>
               </View>
             ) : null}
-          </View>
+          </View> */}
         </View>
         <View
           style={{
