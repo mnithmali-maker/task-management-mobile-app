@@ -7,23 +7,27 @@ import {
   Image,
   View,
   SafeAreaView,
+  Modal,
+  TouchableOpacity,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Colors, Fonts, Sizes, CommonStyles } from "../../constants/styles";
 import { Touchable } from "../../components/touchable";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import Ionicons from "react-native-vector-icons/Ionicons";
-
+import { Circle } from "react-native-animated-spinkit";
 const TeamScreen = ({ navigation }) => {
   const [memberList, setMemberList] = useState([]);
-
+  const [isLoading, setisLoading] = useState(false);
   useEffect(() => {
     (async () => {
       console.log("response");
+      setisLoading(true);
       const response = await fetch("http://192.168.1.12:8080/api/v1/member", {
         method: "GET",
       });
       const result = await response.json();
+      setisLoading(false);
       setMemberList(result.payload[0]);
     })();
   }, []);
@@ -31,9 +35,12 @@ const TeamScreen = ({ navigation }) => {
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bodyBackColor }}>
       {header()}
+
+      {loadingDialog()}
       <FlatList
         data={memberList}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => i
+          tem.id}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
@@ -55,7 +62,40 @@ const TeamScreen = ({ navigation }) => {
       </Touchable>
     </View>
   );
-
+  function loadingDialog() {
+    return (
+      <Modal animationType="fade" transparent={true} visible={isLoading}>
+        <TouchableOpacity
+          activeOpacity={1}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <View style={{ justifyContent: "center", flex: 1 }}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => {}}
+              style={styles.dialogStyle}
+            >
+              <View style={{ ...CommonStyles.center }}>
+                <Circle
+                  size={50}
+                  color={Colors.primaryColor}
+                  style={{ marginTop: Sizes.fixPadding - 5.0 }}
+                />
+                <Text
+                  style={{
+                    ...Fonts.primaryColor20Medium,
+                    marginTop: Sizes.fixPadding + 2.0,
+                  }}
+                >
+                  Please wait
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  }
   function header() {
     return (
       <View style={{ backgroundColor: Colors.primaryColor }}>
@@ -107,7 +147,9 @@ const TeamScreen = ({ navigation }) => {
           </Text>
         </View>
 
-        <Touchable onPress={() => navigation.push("Chat", { item })}>
+        <Touchable
+          onPress={() => navigation.push("AddTeamMember", { member: item })}
+        >
           <Ionicons
             name="chatbox-ellipses-outline"
             color={Colors.primaryColor}
@@ -161,5 +203,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     shadowColor: Colors.blackColor,
     shadowOpacity: 0.25,
+  },
+  dialogStyle: {
+    marginHorizontal: Sizes.fixPadding * 2,
+    backgroundColor: Colors.whiteColor,
+    borderRadius: Sizes.fixPadding,
+    padding: Sizes.fixPadding * 2,
   },
 });

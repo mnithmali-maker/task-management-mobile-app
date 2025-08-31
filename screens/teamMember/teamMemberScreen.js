@@ -6,6 +6,9 @@ import {
   View,
   Image,
   Switch,
+  Modal,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
 import React, { useState } from "react";
 import { Colors, Fonts, Sizes, CommonStyles } from "../../constants/styles";
@@ -16,7 +19,13 @@ import { Button } from "../../components/button";
 import * as ImagePicker from "expo-image-picker";
 import { Formik } from "formik";
 import * as Yup from "yup";
-
+import {
+  ALERT_TYPE,
+  AlertNotificationRoot,
+  Dialog,
+  Toast,
+} from "react-native-alert-notification";
+import { Circle } from "react-native-animated-spinkit";
 const teamOptions = [
   "Designer team",
   "Developer team",
@@ -25,7 +34,12 @@ const teamOptions = [
   "Management team",
 ];
 
-const AddNewMemberScreen = ({ navigation }) => {
+const AddNewMemberScreen = ({ navigation, route }) => {
+  const [isLoading, setisLoading] = useState(false);
+  // Check if we are in update mode
+  const isUpdateMode = route.params?.member ? true : false;
+  const existingMember = route.params?.member || null;
+
   const pickDocument = async (setFieldValue) => {
     try {
       const permission =
@@ -60,6 +74,40 @@ const AddNewMemberScreen = ({ navigation }) => {
     }
   };
 
+  function loadingDialog() {
+    return (
+      <Modal animationType="fade" transparent={true} visible={isLoading}>
+        <TouchableOpacity
+          activeOpacity={1}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <View style={{ justifyContent: "center", flex: 1 }}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => {}}
+              style={styles.dialogStyle}
+            >
+              <View style={{ ...CommonStyles.center }}>
+                <Circle
+                  size={50}
+                  color={Colors.primaryColor}
+                  style={{ marginTop: Sizes.fixPadding - 5.0 }}
+                />
+                <Text
+                  style={{
+                    ...Fonts.primaryColor20Medium,
+                    marginTop: Sizes.fixPadding + 2.0,
+                  }}
+                >
+                  Please wait
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  }
   const validationSchema = Yup.object().shape({
     memberName: Yup.string().required("Member name is required"),
     email: Yup.string().email("Invalid email").required("Email is required"),
@@ -90,6 +138,7 @@ const AddNewMemberScreen = ({ navigation }) => {
   const handleSubmit = async (values) => {
     console.log("handleSubmit");
     console.log(values);
+    setisLoading(true);
     let formData = new FormData();
     console.log("file name");
     console.log(values.attachment);
@@ -141,79 +190,109 @@ const AddNewMemberScreen = ({ navigation }) => {
       console.log("im 5555");
       const result = await response.json();
       console.warn(result);
+      if (result.status == 200) {
+        setisLoading(false);
+        Dialog.show({
+          type: ALERT_TYPE.SUCCESS,
+          title: "Success",
+          textBody: "Team Mmeber is added successfully",
+          button: "Close",
+          autoClose: 2000, // auto-close after 3 seconds
+          closeOnOverlayTap: true,
+        });
+
+        setTimeout(() => {
+          navigation.pop(); // or navigation.pop()
+        }, 2000);
+      } else {
+        setisLoading(false);
+        Dialog.show({
+          type: ALERT_TYPE.DANGER,
+          title: "Error",
+          textBody: "Something went wrong!",
+          button: "Close",
+          autoClose: 3000,
+          closeOnOverlayTap: true,
+        });
+      }
     }
   };
   return (
-    <Formik
-      initialValues={{
-        memberName: "",
-        email: "",
-        attachment: null,
-        // selectedTeams: [],
-        isActive: true,
-      }}
-      validationSchema={validationSchema}
-      onSubmit={(values) => {
-        console.log(values);
-        handleSubmit(values);
-        // navigation.pop();
-      }}
-    >
-      {({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleSubmit,
-        setFieldValue,
-      }) => (
-        <View style={{ flex: 1, backgroundColor: Colors.bodyBackColor }}>
-          <Header header="Add New Member" navigation={navigation} />
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            automaticallyAdjustKeyboardInsets={true}
-          >
-            {/* Member Name */}
-            <View style={{ margin: Sizes.fixPadding * 2.0 }}>
-              <Text style={{ ...Fonts.blackColor16Medium }}>Member Name</Text>
-              <View style={styles.infoBox}>
-                <TextInput
-                  value={values.memberName}
-                  onChangeText={handleChange("memberName")}
-                  placeholder="Enter member name"
-                  placeholderTextColor={Colors.grayColor}
-                  style={{ ...Fonts.blackColor15Medium, padding: 0 }}
-                  cursorColor={Colors.primaryColor}
-                  selectionColor={Colors.primaryColor}
-                />
+    <AlertNotificationRoot>
+      <Formik
+        initialValues={{
+          memberName: existingMember?.name || "",
+          email: existingMember?.email || "",
+          attachment: existingMember?.attachment || "",
+          // selectedTeams: [],
+          isActive: true,
+        }}
+        enableReinitialize={true}
+        validationSchema={validationSchema}
+        onSubmit={(values) => {
+          console.log(values);
+          handleSubmit(values);
+          // navigation.pop();
+        }}
+      >
+        {({
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleSubmit,
+          setFieldValue,
+        }) => (
+          <View style={{ flex: 1, backgroundColor: Colors.bodyBackColor }}>
+            <Header
+              header={isUpdateMode ? "Update member" : "Add New Member"}
+              navigation={navigation}
+            />
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              automaticallyAdjustKeyboardInsets={true}
+            >
+              {loadingDialog()}
+              <View style={{ margin: Sizes.fixPadding * 2.0 }}>
+                <Text style={{ ...Fonts.blackColor16Medium }}>Member Name</Text>
+                <View style={styles.infoBox}>
+                  <TextInput
+                    value={values.memberName}
+                    onChangeText={handleChange("memberName")}
+                    placeholder="Enter member name"
+                    placeholderTextColor={Colors.grayColor}
+                    style={{ ...Fonts.blackColor15Medium, padding: 0 }}
+                    cursorColor={Colors.primaryColor}
+                    selectionColor={Colors.primaryColor}
+                  />
+                </View>
+                {touched.memberName && errors.memberName && (
+                  <Text style={{ color: "red" }}>{errors.memberName}</Text>
+                )}
               </View>
-              {touched.memberName && errors.memberName && (
-                <Text style={{ color: "red" }}>{errors.memberName}</Text>
-              )}
-            </View>
 
-            {/* Email */}
-            <View style={{ marginHorizontal: Sizes.fixPadding * 2.0 }}>
-              <Text style={{ ...Fonts.blackColor16Medium }}>Email</Text>
-              <View style={styles.infoBox}>
-                <TextInput
-                  value={values.email}
-                  onChangeText={handleChange("email")}
-                  placeholder="Enter email"
-                  placeholderTextColor={Colors.grayColor}
-                  style={{ ...Fonts.blackColor15Medium, padding: 0 }}
-                  keyboardType="email-address"
-                  cursorColor={Colors.primaryColor}
-                  selectionColor={Colors.primaryColor}
-                />
+              {/* Email */}
+              <View style={{ marginHorizontal: Sizes.fixPadding * 2.0 }}>
+                <Text style={{ ...Fonts.blackColor16Medium }}>Email</Text>
+                <View style={styles.infoBox}>
+                  <TextInput
+                    value={values.email}
+                    onChangeText={handleChange("email")}
+                    placeholder="Enter email"
+                    placeholderTextColor={Colors.grayColor}
+                    style={{ ...Fonts.blackColor15Medium, padding: 0 }}
+                    keyboardType="email-address"
+                    cursorColor={Colors.primaryColor}
+                    selectionColor={Colors.primaryColor}
+                  />
+                </View>
+                {touched.email && errors.email && (
+                  <Text style={{ color: "red" }}>{errors.email}</Text>
+                )}
               </View>
-              {touched.email && errors.email && (
-                <Text style={{ color: "red" }}>{errors.email}</Text>
-              )}
-            </View>
 
-            {/* Team Selection */}
-            {/* <View style={{ margin: Sizes.fixPadding * 2.0 }}>
+              {/* Team Selection */}
+              {/* <View style={{ margin: Sizes.fixPadding * 2.0 }}>
               <Text style={{ ...Fonts.blackColor16Medium }}>Select Teams</Text>
               <View style={{ marginTop: Sizes.fixPadding }}>
                 {teamOptions.map((team, index) => (
@@ -263,94 +342,100 @@ const AddNewMemberScreen = ({ navigation }) => {
               )}
             </View> */}
 
-            {/* Status Toggle */}
-            <View
-              style={{
-                margin: Sizes.fixPadding * 2.0,
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ ...Fonts.blackColor16Medium, flex: 1 }}>
-                Status
-              </Text>
-              <Switch
-                value={values.isActive}
-                onValueChange={(val) => setFieldValue("isActive", val)}
-                trackColor={{
-                  false: Colors.grayColor,
-                  true: Colors.primaryColor,
+              {/* Status Toggle */}
+              <View
+                style={{
+                  margin: Sizes.fixPadding * 2.0,
+                  flexDirection: "row",
+                  alignItems: "center",
                 }}
-                thumbColor={Colors.whiteColor}
-              />
-              <Text style={{ marginLeft: 8, ...Fonts.blackColor15Medium }}>
-                {values.isActive ? "Active" : "Inactive"}
-              </Text>
-            </View>
-
-            {/* Attachment */}
-            <View style={{ margin: Sizes.fixPadding * 2.0 }}>
-              <Text style={{ ...Fonts.blackColor16Medium }}>Attachment</Text>
-              <Touchable
-                onPress={() => pickDocument(setFieldValue)}
-                style={{ ...styles.infoBox, ...CommonStyles.rowAlignCenter }}
               >
-                <Text style={{ ...Fonts.grayColor15Medium, flex: 1 }}>
-                  {values.attachment
-                    ? "Replace attachment"
-                    : "Upload attachment"}
+                <Text style={{ ...Fonts.blackColor16Medium, flex: 1 }}>
+                  Status
                 </Text>
-                <View style={styles.addIconOuterCircle}>
-                  <View style={styles.addIconinnerCircle}>
-                    <MaterialIcons
-                      name="attach-file"
-                      color={Colors.whiteColor}
-                      size={12}
-                    />
-                  </View>
-                </View>
-              </Touchable>
+                <Switch
+                  value={values.isActive}
+                  onValueChange={(val) => setFieldValue("isActive", val)}
+                  trackColor={{
+                    false: Colors.grayColor,
+                    true: Colors.primaryColor,
+                  }}
+                  thumbColor={Colors.whiteColor}
+                />
+                <Text style={{ marginLeft: 8, ...Fonts.blackColor15Medium }}>
+                  {values.isActive ? "Active" : "Inactive"}
+                </Text>
+              </View>
 
-              {values.attachment && (
-                <View
-                  style={[
-                    styles.attachmentRow,
-                    { marginTop: Sizes.fixPadding },
-                  ]}
+              {/* Attachment */}
+              <View style={{ margin: Sizes.fixPadding * 2.0 }}>
+                <Text style={{ ...Fonts.blackColor16Medium }}>Attachment</Text>
+                <Touchable
+                  onPress={() => pickDocument(setFieldValue)}
+                  style={{ ...styles.infoBox, ...CommonStyles.rowAlignCenter }}
                 >
-                  <Image
-                    source={{ uri: values.attachment.uri }}
-                    style={{ width: 70, height: 70, borderRadius: 6 }}
-                  />
-                  <Text
-                    style={{
-                      ...Fonts.blackColor14Regular,
-                      flex: 1,
-                      marginLeft: 8,
-                    }}
-                  >
-                    {values.attachment.fileName || "Selected File"}
+                  <Text style={{ ...Fonts.grayColor15Medium, flex: 1 }}>
+                    {values.attachment
+                      ? "Replace attachment"
+                      : "Upload attachment"}
                   </Text>
-                  <Touchable onPress={() => setFieldValue("attachment", null)}>
-                    <MaterialIcons
-                      name="close"
-                      size={20}
-                      color={Colors.redColor}
-                    />
-                  </Touchable>
-                </View>
-              )}
-              {touched.attachment && errors.attachment && (
-                <Text style={{ color: "red" }}>{errors.attachment}</Text>
-              )}
-            </View>
-          </ScrollView>
+                  <View style={styles.addIconOuterCircle}>
+                    <View style={styles.addIconinnerCircle}>
+                      <MaterialIcons
+                        name="attach-file"
+                        color={Colors.whiteColor}
+                        size={12}
+                      />
+                    </View>
+                  </View>
+                </Touchable>
 
-          {/* Save Button */}
-          <Button buttonText="Save" onPress={handleSubmit} />
-        </View>
-      )}
-    </Formik>
+                {values.attachment && (
+                  <View
+                    style={[
+                      styles.attachmentRow,
+                      { marginTop: Sizes.fixPadding },
+                    ]}
+                  >
+                    <Image
+                      source={{ uri: values.attachment.uri }}
+                      style={{ width: 70, height: 70, borderRadius: 6 }}
+                    />
+                    <Text
+                      style={{
+                        ...Fonts.blackColor14Regular,
+                        flex: 1,
+                        marginLeft: 8,
+                      }}
+                    >
+                      {values.attachment.fileName || "Selected File"}
+                    </Text>
+                    <Touchable
+                      onPress={() => setFieldValue("attachment", null)}
+                    >
+                      <MaterialIcons
+                        name="close"
+                        size={20}
+                        color={Colors.redColor}
+                      />
+                    </Touchable>
+                  </View>
+                )}
+                {touched.attachment && errors.attachment && (
+                  <Text style={{ color: "red" }}>{errors.attachment}</Text>
+                )}
+              </View>
+            </ScrollView>
+
+            {/* Save Button */}
+            <Button
+              buttonText={isUpdateMode ? "Update" : "Save"}
+              onPress={handleSubmit}
+            />
+          </View>
+        )}
+      </Formik>
+    </AlertNotificationRoot>
   );
 };
 
@@ -389,5 +474,11 @@ const styles = StyleSheet.create({
     borderRadius: Sizes.fixPadding,
     padding: Sizes.fixPadding,
     ...CommonStyles.shadow,
+  },
+  dialogStyle: {
+    marginHorizontal: Sizes.fixPadding * 2,
+    backgroundColor: Colors.whiteColor,
+    borderRadius: Sizes.fixPadding,
+    padding: Sizes.fixPadding * 2,
   },
 });

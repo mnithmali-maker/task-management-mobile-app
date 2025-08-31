@@ -212,7 +212,7 @@ const ProjectDetailScreen = ({ navigation, route }) => {
       // console.log("Calling:", `${API_URL}/project/updateStatus/${projectId}/${status}`);
 
       const response = await fetch(
-        `http:192.168.8.102:8080/api/v1/project/updateStatus/${projectId}/${status}`,
+        `http:192.168.1.12:8080/api/v1/project/updateStatus/${projectId}/${status}`,
         {
           method: "PUT",
           headers: {
