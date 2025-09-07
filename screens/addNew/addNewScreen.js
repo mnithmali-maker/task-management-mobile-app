@@ -61,6 +61,7 @@ const AddNewScreen = ({ navigation, route }) => {
   const [attachments, setAttachments] = useState([]);
   const [projectName, setprojectName] = useState("");
   const [isLoading, setisLoading] = useState(false);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
   // const [teamsList,setTeamList] = useState([]);
 
   const initialValues = {
@@ -70,7 +71,7 @@ const AddNewScreen = ({ navigation, route }) => {
     endingDate: "",
     selectedProject: null,
     selectedTeam: "",
-    projectStatus: "",
+    projectStatus: "TODO",
     taskStatus: "",
     status: true,
   };
@@ -196,6 +197,92 @@ const AddNewScreen = ({ navigation, route }) => {
   }, []);
 
   useEffect(() => {
+    // console.warn(mode,from);
+    if (mode == "edit" && from == "task") {
+      const fetchProjects = async () => {
+        setisLoading(true);
+        // console.warn(item);
+        console.warn("get existing project...");
+        try {
+          const projectId = item?.id;
+          // const url = `${API_URL}/project/`;
+          // console.log(url);
+
+          // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
+          const response = await fetch(
+            `http://192.168.8.102:8080/api/v1/task/task/${projectId}`
+          );
+          const result = await response.json();
+          // console.warn(result);
+
+          if (result.status === 200) {
+            setisLoading(false);
+            console.warn("Suucess ooo");
+            const values = result.payload[0];
+            const formatDate = (dateStr) => {
+              if (!dateStr) return "";
+              const [year, month, day] = dateStr.split("-"); // "2025-08-14" → ["2025","08","14"]
+              return `${day}/${month}/${year}`;
+            };
+            // console.warn(values.attachments);
+            // Map backend attachments into your frontend format
+            const savedAttachments = (values.attachments || []).map(
+              (att, index) => ({
+                name: att.imageOriginalName || `file_${index}`, // backend field
+                uri: "http://192.168.8.102:8080/task/uploads/" + att.filePath, // build correct URL
+                type: att.fileType || "application/octet-stream",
+                saved: true, // mark as already saved
+              })
+            );
+            const initialValues = {
+              // taskName: "",
+              taskId: values?.taskId,
+              taskName: values?.name,
+              selectedProject: values?.project,
+              startingDate: values?.startDate
+                ? formatDate(values.startDate)
+                : "",
+              endingDate: values?.endDate ? formatDate(values.endDate) : "",
+              projectStatus: values?.projectStatus,
+              status: values?.status,
+              // selectedProject: null,
+              selectedTeam: "",
+            };
+            // console.warn(initialValues);
+            setLoadValues(initialValues);
+            setAttachments(savedAttachments);
+            console.warn(values?.teamMembers);
+            const membersList = (values?.teamMembers || []).map((item) => ({
+              id: item.id,
+              name: item.name,
+              profession: item.designation,
+              selected: false,
+              image: item.attachment
+                ? `data:${item.attachment.mimeType};base64,${item.attachment.data}`
+                : null,
+            }));
+            setSelectedMembers(membersList);
+
+            // setSelectedMembers(values?.teamMembers);
+            // const projectNames = result.payload[0].map((item) => item.name);
+            // console.warn(projectNames);
+            // setSelectedProject(result.payload[0]); // because payload is wrapped in a list
+          } else {
+            console.warn(result.errorMessages?.[0] || "No records found");
+          }
+        } catch (error) {
+          setisLoading(false);
+          console.error("Error fetching projects:", error);
+        } finally {
+          setisLoading(false);
+        }
+      };
+
+      fetchProjects();
+    }
+  }, []);
+
+  useEffect(() => {
     console.warn("called member...");
 
     const fetchTeamMembers = async () => {
@@ -239,6 +326,7 @@ const AddNewScreen = ({ navigation, route }) => {
         ? Yup.string().required("Project name is required")
         : Yup.string(),
     startingDate: Yup.string().required("Starting date is required"),
+    projectStatus: Yup.string().required("Status is required"),
     endingDate: Yup.string()
       .required("Ending date is required")
       .test(
@@ -667,7 +755,7 @@ const AddNewScreen = ({ navigation, route }) => {
           startDate: formatDate(parseDMY(values?.startingDate)),
           // startDate:values?.startingDate,
           endDate: formatDate(parseDMY(values?.endingDate)),
-          projectStatus: mode == "edit" ? values?.projectStatus : "PENDING",
+          projectStatus: values?.projectStatus,
           status: values?.status,
           teamMembers: selectedMembers.map((m) => m.id),
           // endDate:values?.endingDate,
@@ -676,7 +764,7 @@ const AddNewScreen = ({ navigation, route }) => {
 
         formData.append("project", JSON.stringify(project));
         // console.warn(formData);
-        // const response = await fetch("http:192.168.8.101:8080/api/v1/project/");
+        // const response = await fetch("http:192.168.8.102:8080/api/v1/project/");
         const response = await fetch(
           "http://192.168.1.12:8080/api/v1/project/save",
           {
@@ -785,7 +873,7 @@ const AddNewScreen = ({ navigation, route }) => {
           // team: selectedTeam,
           project: values?.selectedProject?.projectId,
           status: values?.status,
-          taskStatus: mode == "edit" ? values?.taskStatus : "PENDING",
+          taskStatus: values?.projectStatus,
           teamMembers: selectedMembers.map((m) => m.id),
         };
         formData.append("task", JSON.stringify(task));
@@ -1187,6 +1275,61 @@ const AddNewScreen = ({ navigation, route }) => {
                     {/* Status Toggle */}
                   </Touchable>
                 </View>
+                <View style={{ margin: Sizes.fixPadding * 2 }}>
+                  <Text style={Fonts.blackColor16Medium}>Progress Status</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setShowStatusMenu(true)}
+                    style={{
+                      ...styles.infoBox,
+                      ...CommonStyles.rowAlignCenter,
+                    }}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        ...(values?.projectStatus
+                          ? { ...Fonts.blackColor15Medium }
+                          : { ...Fonts.grayColor15Medium }),
+                        flex: 1,
+                      }}
+                    >
+                      {values.projectStatus || "Select status"}
+                    </Text>
+                    <Menu
+                      visible={showStatusMenu}
+                      anchor={
+                        <Ionicons
+                          name="chevron-down"
+                          color={Colors.grayColor}
+                          size={20}
+                        />
+                      }
+                      onRequestClose={() => setShowStatusMenu(false)}
+                    >
+                      {["TODO", "INPROGRESS", "COMPLETED", "HOLD"].map(
+                        (option, index) => (
+                          <MenuItem
+                            key={index}
+                            textStyle={{ ...Fonts.blackColor16Medium }}
+                            onPress={() => {
+                              setFieldValue("projectStatus", option);
+                              setShowStatusMenu(false);
+                            }}
+                          >
+                            {option}
+                          </MenuItem>
+                        )
+                      )}
+                    </Menu>
+                  </TouchableOpacity>
+                  {touched.projectStatus && errors.projectStatus && (
+                    <Text style={{ color: "red", fontSize: 12 }}>
+                      {errors.projectStatus}
+                    </Text>
+                  )}
+                </View>
+
                 <View
                   style={{
                     margin: Sizes.fixPadding * 2.0,

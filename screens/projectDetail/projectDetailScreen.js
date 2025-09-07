@@ -1140,6 +1140,22 @@ const AllTasks = (props) => {
               {item.date}
             </Text>
           </View>
+          <Touchable
+                            onPress={() => {
+                              props.navigation.push("AddNew", {
+                                from: "task",
+                                mode: "edit",
+                                project: item,
+                              });
+                            }}
+                            // style={{ marginHorizontal: }}
+                          >
+                            <MaterialIcons
+                              name="edit"
+                              size={22}
+                              color={Colors.primaryColor}
+                            />
+                          </Touchable>
           <Menu
             visible={selctedItemId == item.id ? showMenu : false}
             anchor={

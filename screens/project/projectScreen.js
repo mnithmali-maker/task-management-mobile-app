@@ -108,7 +108,7 @@ const ProjectScreen = ({ navigation, route }) => {
     const unsubscribe = navigation.addListener("focus", () => {
       const fetchActiveProjects = async () => {
         console.warn("fetch");
-        let projectStatus = "PENDING";
+        let projectStatus = "TODO";
         try {
           const response = await fetch(
             `http:192.168.1.12:8080/api/v1/project/active/${projectStatus}`
