@@ -154,8 +154,8 @@ const commentsList = [
     image: require("../../assets/images/users/user2.png"),
     name: "Guy Hawkins",
     profession: "Designer",
-    time: "1 hour ago",
-    comment:
+    createdTime: "1 hour ago",
+    description:
       "Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi",
   },
   {
@@ -163,8 +163,8 @@ const commentsList = [
     image: require("../../assets/images/users/user3.png"),
     name: "Nipuni Madushani",
     profession: "Back-end developer",
-    time: "1 hour ago",
-    comment:
+    createdTime: "1 hour ago",
+    description:
       "Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi",
   },
   {
@@ -172,13 +172,13 @@ const commentsList = [
     image: require("../../assets/images/users/user4.png"),
     name: "Guy Hawkins",
     profession: "Flutter developer",
-    time: "1 hour ago",
+    createdTime: "1 hour ago",
     attachments: [
       require("../../assets/images/files/file4.png"),
       require("../../assets/images/files/file5.png"),
       require("../../assets/images/files/file6.png"),
     ],
-    comment:
+    description:
       "Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi",
   },
   {
@@ -186,8 +186,8 @@ const commentsList = [
     image: require("../../assets/images/users/user5.png"),
     name: "Esther Howard",
     profession: "Developer",
-    time: "1 hour ago",
-    comment:
+    createdTime: "1 hour ago",
+    description:
       "Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi",
   },
   {
@@ -195,15 +195,15 @@ const commentsList = [
     image: require("../../assets/images/users/user6.png"),
     name: "Albert Flores",
     profession: "Designer",
-    time: "1 hour ago",
-    comment:
+    createdTime: "1 hour ago",
+    description:
       "Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi",
   },
 ];
 
 const ProjectDetailScreen = ({ navigation, route }) => {
   const item = route.params.item;
-
+  console.warn("item");
   console.warn(item);
   useEffect(() => {
     if (route.params?.members) {
@@ -216,7 +216,7 @@ const ProjectDetailScreen = ({ navigation, route }) => {
       // console.log("Calling:", `${API_URL}/project/updateStatus/${projectId}/${status}`);
 
       const response = await fetch(
-        `http:192.168.8.101:8080/api/v1/project/updateStatus/${projectId}/${status}`,
+        `http:192.168.1.12:8080/api/v1/project/updateStatus/${projectId}/${status}`,
         {
           method: "PUT",
           headers: {
@@ -226,7 +226,6 @@ const ProjectDetailScreen = ({ navigation, route }) => {
       );
 
       const result = await response.json();
-      console.log("Backend Response:", result);
 
       if (result.status === 200) {
         // Alert.alert("✅ Success", "Project status updated successfully!");
@@ -270,7 +269,7 @@ const ProjectDetailScreen = ({ navigation, route }) => {
     { key: "first", title: "All task" },
     // { key: "second", title: "File" },
     // { key: "third", title: "Team" },
-    // { key: "forth", title: "Comments" },
+    { key: "forth", title: "Comments" },
   ];
   const [showDeleteDialog, setshowDeleteDialog] = useState(false);
   const [showCompleteDialog, setshowCompleteDialog] = useState(false);
@@ -345,7 +344,7 @@ const ProjectDetailScreen = ({ navigation, route }) => {
         case "third":
           return <Teams navigation={navigation} teamMembers={teamMembers} />;
         case "forth":
-          return <Comments />;
+          return <Comments navigation={navigation} item={item} />;
       }
     };
 
@@ -507,17 +506,80 @@ const ProjectDetailScreen = ({ navigation, route }) => {
   }
 };
 
-const Comments = () => {
+const Comments = (props) => {
+  const [dataList, setdataList] = useState([]);
+  useEffect(() => {
+    console.log("heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+
+    const fetchAllissues = async () => {
+      console.warn("fetch issues");
+
+      try {
+        const response = await fetch(
+          `http://192.168.1.12:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
+        );
+        const result = await response.json();
+        console.log("all issues");
+        console.log(result.payload[0]);
+        setdataList(result.payload[0]);
+        if (result.status === 200) {
+          // handle success
+        }
+      } catch (error) {
+        console.error("Error fetching active projects:", error);
+      }
+    };
+
+    fetchAllissues();
+  }, []); // <-- Correct hook usage
+
   return (
     <View style={{ flex: 1 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {commentTitle()}
-        {comments()}
+        {totalAndAddInfo()}
+        {/* {commentTitle()} */}
+        {comments(dataList)}
       </ScrollView>
       {typeComment()}
     </View>
   );
-
+  function totalAndAddInfo() {
+    return (
+      <View
+        style={{
+          ...CommonStyles.rowAlignCenter,
+          margin: Sizes.fixPadding * 2.0,
+        }}
+      >
+        <Text
+          numberOfLines={1}
+          style={{ flex: 1, ...Fonts.blackColor16Medium }}
+        >
+          Total {commentsList.length} issues
+        </Text>
+        <Touchable
+          onPress={() => {
+            props.navigation.push("AddNewIssue");
+          }}
+          style={{ ...CommonStyles.rowAlignCenter }}
+        >
+          <View style={styles.addIconOuterCircle}>
+            <View style={styles.addIconinnerCircle}>
+              <MaterialIcons name="add" color={Colors.whiteColor} size={12} />
+            </View>
+          </View>
+          <Text
+            style={{
+              ...Fonts.primaryColor14Medium,
+              marginLeft: Sizes.fixPadding - 5.0,
+            }}
+          >
+            Add new
+          </Text>
+        </Touchable>
+      </View>
+    );
+  }
   function typeComment() {
     const fieldRef = useRef();
     return (
@@ -561,54 +623,72 @@ const Comments = () => {
     );
   }
 
-  function comments() {
+  function comments(data) {
+    console.log("dataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    console.log(data);
+    const formatDate = (dateString) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
     const renderItem = ({ item }) => (
       <View style={styles.commentCard}>
-        <View style={{ ...CommonStyles.rowAlignCenter }}>
-          <Image
-            source={item.image}
-            style={{ width: 50.0, height: 50.0, borderRadius: 25.0 }}
-          />
-          <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
-            <Text numberOfLines={1} style={{ ...Fonts.blackColor15Medium }}>
-              {item.name}
-            </Text>
-            <Text numberOfLines={1} style={{ ...Fonts.grayColor14Medium }}>
-              {item.profession}
-            </Text>
-          </View>
-          <Text style={{ ...Fonts.grayColor14Medium }}>{item.time}</Text>
-        </View>
-        {item.attachments ? (
-          <FlatList
-            data={item.attachments}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item: innerItem, index }) => (
-              <Image
-                source={innerItem}
-                style={{
-                  marginRight:
-                    index == item.attachments?.length - 1
-                      ? 0
-                      : Sizes.fixPadding,
-                  ...styles.attachImageStyle,
-                }}
+        {/* Top row: Date (left) + Icons (right) */}
+        <View
+          style={{
+            ...CommonStyles.rowAlignCenter,
+            justifyContent: "space-between",
+          }}
+        >
+          <Text style={{ ...Fonts.grayColor14Medium }}>
+            {formatDate(item.createdTime)}
+          </Text>
+
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity
+              onPress={() => {
+                console.log("Comment on:", item.issueId);
+                props.navigation.navigate("AddNewComment");
+              }}
+              style={{ marginHorizontal: 6 }}
+            >
+              <MaterialIcons
+                name="comment"
+                size={20}
+                color={Colors.primaryColor}
               />
-            )}
-            contentContainerStyle={{ paddingTop: Sizes.fixPadding }}
-          />
-        ) : null}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                console.log("Edit issue:", item.issueId);
+                props.navigation.navigate("AddNewIssue", { issue: item });
+              }}
+            >
+              <MaterialIcons
+                name="edit"
+                size={20}
+                color={Colors.primaryColor}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Description */}
         <Text
           style={{ ...Fonts.grayColor14Medium, marginTop: Sizes.fixPadding }}
         >
-          {item.comment}
+          {item.description}
         </Text>
       </View>
     );
+
     return (
       <FlatList
-        data={commentsList}
+        data={data}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: Sizes.fixPadding - 5.0 }}
@@ -853,7 +933,7 @@ const AllTasks = (props) => {
         console.warn("id:" + id);
         try {
           const response = await fetch(
-            `http://192.168.8.101:8080/api/v1/task/${id}`
+            `http://192.168.1.12:8080/api/v1/task/${id}`
           );
           const result = await response.json();
 

@@ -28,6 +28,8 @@ import FaqScreen from "./screens/faq/faqScreen";
 import AddNewScreen from "./screens/addNew/addNewScreen";
 import AddNewMemberScreen from "./screens/teamMember/teamMemberScreen";
 import TeamMemberList from "./screens/teamMember/teamMemberList";
+import AddNewIssue from "./screens/addNewIssue/addNewIssue";
+import AddNewComment from "./screens/addNewComment/addNewComment";
 
 ExpoSplashScreen.preventAutoHideAsync();
 
@@ -86,6 +88,8 @@ const App = () => {
             component={TermsAndConditionsScreen}
           />
           <Stack.Screen name="Faq" component={FaqScreen} />
+           <Stack.Screen name="AddNewIssue" component={AddNewIssue} />
+              <Stack.Screen name="AddNewComment" component={AddNewComment} />
         </Stack.Navigator>
       </NavigationContainer>
     );

@@ -86,7 +86,7 @@ const AddNewScreen = ({ navigation, route }) => {
 
           // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
           const response = await fetch(
-            "http:192.168.8.101:8080/api/v1/project/"
+            "http:192.168.1.12:8080/api/v1/project/"
           );
           const result = await response.json();
           // console.warn(result);
@@ -125,7 +125,7 @@ const AddNewScreen = ({ navigation, route }) => {
 
           // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
           const response = await fetch(
-            `http://192.168.8.101:8080/api/v1/project/${projectId}`
+            `http://192.168.1.12:8080/api/v1/project/${projectId}`
           );
           const result = await response.json();
           // console.warn(result);
@@ -144,7 +144,7 @@ const AddNewScreen = ({ navigation, route }) => {
             const savedAttachments = (values.attachments || []).map(
               (att, index) => ({
                 name: att.imageOriginalName || `file_${index}`, // backend field
-                uri: "http://192.168.8.101:8080/uploads/" + att.filePath, // build correct URL
+                uri: "http://192.168.1.12:8080/uploads/" + att.filePath, // build correct URL
                 type: att.fileType || "application/octet-stream",
                 saved: true, // mark as already saved
               })
@@ -206,7 +206,7 @@ const AddNewScreen = ({ navigation, route }) => {
         const status = true;
         // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
         const response = await fetch(
-          `http://192.168.8.101:8080/api/v1/member/status/${status}`
+          `http://192.168.1.12:8080/api/v1/member/status/${status}`
         );
         const result = await response.json();
         console.warn(result);
@@ -678,7 +678,7 @@ const AddNewScreen = ({ navigation, route }) => {
         // console.warn(formData);
         // const response = await fetch("http:192.168.8.101:8080/api/v1/project/");
         const response = await fetch(
-          "http://192.168.8.101:8080/api/v1/project/save",
+          "http://192.168.1.12:8080/api/v1/project/save",
           {
             method: "POST",
             body: formData,
@@ -791,7 +791,7 @@ const AddNewScreen = ({ navigation, route }) => {
         formData.append("task", JSON.stringify(task));
         console.warn(formData);
 
-        const response = await fetch("http://192.168.8.101:8080/api/v1/task/save", {
+        const response = await fetch("http://192.168.1.12:8080/api/v1/task/save", {
           method: "POST",
           body: formData,
         });

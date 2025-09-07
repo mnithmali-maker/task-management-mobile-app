@@ -39,8 +39,7 @@ const TeamScreen = ({ navigation }) => {
       {loadingDialog()}
       <FlatList
         data={memberList}
-        keyExtractor={(item) => i
-          tem.id}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

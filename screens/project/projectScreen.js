@@ -111,7 +111,7 @@ const ProjectScreen = ({ navigation, route }) => {
         let projectStatus = "PENDING";
         try {
           const response = await fetch(
-            `http:192.168.8.101:8080/api/v1/project/active/${projectStatus}`
+            `http:192.168.1.12:8080/api/v1/project/active/${projectStatus}`
           );
           const result = await response.json();
 
@@ -215,7 +215,7 @@ const ProjectScreen = ({ navigation, route }) => {
         let projectStatus = "COMPLETED";
         try {
           const response = await fetch(
-            `http:192.168.8.101:8080/api/v1/project/active/${projectStatus}`
+            `http:192.168.1.12:8080/api/v1/project/active/${projectStatus}`
           );
           const result = await response.json();
 
@@ -482,7 +482,7 @@ const ProjectScreen = ({ navigation, route }) => {
                 numberOfLines={1}
                 style={{ ...Fonts.whiteColor16Medium, opacity: 0.8 }}
               >
-                View all project
+                View all projects22
               </Text>
             </View>
             <Image
