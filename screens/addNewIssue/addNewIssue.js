@@ -171,7 +171,7 @@ const AddNewIssue = ({ navigation, route }) => {
 
     formData.append("issue", JSON.stringify(issue));
 
-    const response = await fetch("http://192.168.1.12:8080/api/v1/issue", {
+    const response = await fetch("http://192.168.1.14:8080/api/v1/issue", {
       method: "POST",
       body: formData,
     });

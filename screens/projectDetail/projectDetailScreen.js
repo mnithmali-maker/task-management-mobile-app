@@ -216,7 +216,7 @@ const ProjectDetailScreen = ({ navigation, route }) => {
       // console.log("Calling:", `${API_URL}/project/updateStatus/${projectId}/${status}`);
 
       const response = await fetch(
-        `http:192.168.1.12:8080/api/v1/project/updateStatus/${projectId}/${status}`,
+        `http:192.168.1.14:8080/api/v1/project/updateStatus/${projectId}/${status}`,
         {
           method: "PUT",
           headers: {
@@ -266,10 +266,10 @@ const ProjectDetailScreen = ({ navigation, route }) => {
 
   const [index, setIndex] = useState(0);
   const routes = [
-    { key: "first", title: "All task" },
+    { key: "first", title: "All tasks" },
     // { key: "second", title: "File" },
     // { key: "third", title: "Team" },
-    { key: "forth", title: "Comments" },
+    { key: "forth", title: "Dispute Records" },
   ];
   const [showDeleteDialog, setshowDeleteDialog] = useState(false);
   const [showCompleteDialog, setshowCompleteDialog] = useState(false);
@@ -516,7 +516,7 @@ const Comments = (props) => {
 
       try {
         const response = await fetch(
-          `http://192.168.1.12:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
+          `http://192.168.1.14:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
         );
         const result = await response.json();
         console.log("all issues");
@@ -933,7 +933,7 @@ const AllTasks = (props) => {
         console.warn("id:" + id);
         try {
           const response = await fetch(
-            `http://192.168.1.12:8080/api/v1/task/${id}`
+            `http://192.168.1.14:8080/api/v1/task/${id}`
           );
           const result = await response.json();
 
