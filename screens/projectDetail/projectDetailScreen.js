@@ -13,7 +13,7 @@ import {
   KeyboardAvoidingView,
   Alert,
 } from "react-native";
-import React, { useRef, useState, useEffect, useMemo } from "react";
+import React, { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import {
   Colors,
   Fonts,
@@ -35,6 +35,7 @@ import {
   Dialog,
   Toast,
 } from "react-native-alert-notification";
+import { useFocusEffect } from "@react-navigation/native";
 
 // const optionsList = ['Delete project', 'Share project', 'Copy link', 'Complete Project'];
 
@@ -216,7 +217,7 @@ const ProjectDetailScreen = ({ navigation, route }) => {
       // console.log("Calling:", `${API_URL}/project/updateStatus/${projectId}/${status}`);
 
       const response = await fetch(
-        `http:192.168.1.14:8080/api/v1/project/updateStatus/${projectId}/${status}`,
+        `http:192.168.1.12:8080/api/v1/project/updateStatus/${projectId}/${status}`,
         {
           method: "PUT",
           headers: {
@@ -508,31 +509,55 @@ const ProjectDetailScreen = ({ navigation, route }) => {
 
 const Comments = (props) => {
   const [dataList, setdataList] = useState([]);
-  useEffect(() => {
-    console.log("heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+  // useEffect(() => {
+  //   console.log("heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
 
-    const fetchAllissues = async () => {
-      console.warn("fetch issues");
+  //   const fetchAllissues = async () => {
+  //     console.warn("fetch issues");
 
-      try {
-        const response = await fetch(
-          `http://192.168.1.14:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
-        );
-        const result = await response.json();
-        console.log("all issues");
-        console.log(result.payload[0]);
-        setdataList(result.payload[0]);
-        if (result.status === 200) {
-          // handle success
+  //     try {
+  //       const response = await fetch(
+  //         `http://192.168.1.12:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
+  //       );
+  //       const result = await response.json();
+  //       console.log("all issues");
+  //       console.log(result.payload[0]);
+  //       setdataList(result.payload[0]);
+  //       if (result.status === 200) {
+  //         // handle success
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching active projects:", error);
+  //     }
+  //   };
+
+  //   fetchAllissues();
+  // }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAllissues = async () => {
+        console.warn("fetch issues");
+
+        try {
+          const response = await fetch(
+            `http://192.168.1.12:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
+          );
+          const result = await response.json();
+          console.log("all issues");
+          console.log(result.payload[0]);
+          setdataList(result.payload[0]);
+          if (result.status === 200) {
+            // handle success
+          }
+        } catch (error) {
+          console.error("Error fetching active projects:", error);
         }
-      } catch (error) {
-        console.error("Error fetching active projects:", error);
-      }
-    };
+      };
 
-    fetchAllissues();
-  }, []); // <-- Correct hook usage
-
+      fetchAllissues();
+    }, [])
+  );
   return (
     <View style={{ flex: 1 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -651,7 +676,7 @@ const Comments = (props) => {
             <TouchableOpacity
               onPress={() => {
                 console.log("Comment on:", item.issueId);
-                props.navigation.navigate("AddNewComment");
+                props.navigation.navigate("AddNewComment", { issue: item });
               }}
               style={{ marginHorizontal: 6 }}
             >
@@ -933,7 +958,7 @@ const AllTasks = (props) => {
         console.warn("id:" + id);
         try {
           const response = await fetch(
-            `http://192.168.1.14:8080/api/v1/task/${id}`
+            `http://192.168.1.12:8080/api/v1/task/${id}`
           );
           const result = await response.json();
 
@@ -1141,21 +1166,17 @@ const AllTasks = (props) => {
             </Text>
           </View>
           <Touchable
-                            onPress={() => {
-                              props.navigation.push("AddNew", {
-                                from: "task",
-                                mode: "edit",
-                                project: item,
-                              });
-                            }}
-                            // style={{ marginHorizontal: }}
-                          >
-                            <MaterialIcons
-                              name="edit"
-                              size={22}
-                              color={Colors.primaryColor}
-                            />
-                          </Touchable>
+            onPress={() => {
+              props.navigation.push("AddNew", {
+                from: "task",
+                mode: "edit",
+                project: item,
+              });
+            }}
+            // style={{ marginHorizontal: }}
+          >
+            <MaterialIcons name="edit" size={22} color={Colors.primaryColor} />
+          </Touchable>
           <Menu
             visible={selctedItemId == item.id ? showMenu : false}
             anchor={

@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Colors, Fonts, Sizes, CommonStyles } from "../../constants/styles";
 import Header from "../../components/header";
 import { Touchable } from "../../components/touchable";
@@ -40,7 +40,44 @@ const AddNewIssue = ({ navigation, route }) => {
   const [isLoading, setisLoading] = useState(false);
   // Check if we are in update mode
   const isUpdateMode = route.params?.issue ? true : false;
-  const existingMember = route.params?.issue || null;
+  const existingIssue = route.params?.issue || null;
+  console.log(isUpdateMode);
+  console.log(existingIssue.issueId);
+
+  useEffect(() => {
+    if (existingIssue != null) {
+      findCommentsByIssue(existingIssue.issueId);
+    }
+  }, [existingIssue]);
+
+  const findCommentsByIssue = async (id) => {
+    try {
+      const response = await fetch(
+        `http://192.168.1.12:8080/api/v1/issue/${id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        // Handle HTTP errors
+        const errorText = await response.text(); // or respon/se.json() if server returns JSON
+        throw new Error(`Error ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log("list:", result.payload[0]);
+      setComments(result.payload[0]);
+      return result;
+    } catch (error) {
+      // Handle network/parse errors
+      console.error("Request failed:", error.message);
+      // You can also show an alert or return a fallback value
+    }
+  };
 
   const pickDocument = async (values, setFieldValue) => {
     try {
@@ -171,7 +208,7 @@ const AddNewIssue = ({ navigation, route }) => {
 
     formData.append("issue", JSON.stringify(issue));
 
-    const response = await fetch("http://192.168.1.14:8080/api/v1/issue", {
+    const response = await fetch("http://192.168.1.12:8080/api/v1/issue", {
       method: "POST",
       body: formData,
     });
@@ -180,11 +217,11 @@ const AddNewIssue = ({ navigation, route }) => {
     console.log(result.payload[0]);
 
     setisLoading(false);
-    if (result.payload[0] == 'success.') {
+    if (result.payload[0] == "success.") {
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: "Success",
-        textBody: "Team Member is added successfully",
+        textBody: "New Issue is added successfully",
         button: "Close",
         autoClose: 2000,
       });
@@ -204,10 +241,10 @@ const AddNewIssue = ({ navigation, route }) => {
     <AlertNotificationRoot>
       <Formik
         initialValues={{
-          memberName: existingMember?.name || "",
-          email: existingMember?.email || "",
-          attachment: existingMember?.attachment || [],
-          issueStatus: existingMember?.issueStatus || "TODO",
+          memberName: existingIssue?.name || "",
+          email: existingIssue?.email || "",
+          attachment: existingIssue?.attachment || [],
+          issueStatus: existingIssue?.issueStatus || "TODO",
           isActive: true,
         }}
         enableReinitialize={true}

@@ -183,7 +183,7 @@ const AddNewMemberScreen = ({ navigation, route }) => {
 
       formData.append("member", JSON.stringify(member));
       console.log("im vyeeeeeeeeeeeee4343");
-      const response = await fetch("http://192.168.1.14:8080/api/v1/member", {
+      const response = await fetch("http://192.168.1.12:8080/api/v1/member", {
         method: "POST",
         body: formData,
       });

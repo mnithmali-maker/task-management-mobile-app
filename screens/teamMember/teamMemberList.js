@@ -23,7 +23,7 @@ const TeamScreen = ({ navigation }) => {
     (async () => {
       console.log("response");
       setisLoading(true);
-      const response = await fetch("http://192.168.1.14:8080/api/v1/member", {
+      const response = await fetch("http://192.168.1.12:8080/api/v1/member", {
         method: "GET",
       });
       const result = await response.json();

@@ -84,7 +84,7 @@ const TaskScreen = ({ navigation, route }) => {
   const fetchTasks = async (status) => {
     try {
       const response = await fetch(
-        `http://192.168.1.14:8080/api/v1/task/status/${status}`
+        `http://192.168.1.12:8080/api/v1/task/status/${status}`
       );
       const result = await response.json();
 
