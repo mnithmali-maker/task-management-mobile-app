@@ -94,7 +94,7 @@ const InviteMemberScreen = ({ navigation, route }) => {
       try {
         const status = true;
         const response = await fetch(
-          `http://192.168.8.102:8080/api/v1/member/status/${status}`
+          `http://192.168.8.103:8080/api/v1/member/status/${status}`
         );
         const result = await response.json();
         // console.warn(result);

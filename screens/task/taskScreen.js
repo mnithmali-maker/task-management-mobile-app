@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import {
   ImageBackground,
@@ -29,40 +28,40 @@ import {
 import { Touchable } from "../../components/touchable";
 import TaskDeleteDialog from "../../components/taskDeleteDialog";
 
-const taskCategoryList = [
-  {
-    id: "1",
-    title: "Total task",
-    description: "50 task",
-    bgColor: Colors.purpleColor,
-    bgImageColor: "rgba(255, 228, 255,0.8)",
-    icon: require("../../assets/images/icons/list.png"),
-  },
-  {
-    id: "2",
-    title: "In-progress",
-    description: "20 task",
-    bgColor: Colors.greenColor,
-    bgImageColor: "rgba(91, 254, 255,0.8)",
-    icon: require("../../assets/images/icons/calendar.png"),
-  },
-  {
-    id: "3",
-    title: "Completed",
-    description: "10 task",
-    bgColor: Colors.pitchColor,
-    bgImageColor: "rgba(255, 226, 226,0.8)",
-    icon: require("../../assets/images/icons/complete.png"),
-  },
-  {
-    id: "4",
-    title: "Team",
-    description: "12 member",
-    bgColor: Colors.pinkColor,
-    bgImageColor: "rgba(254, 219, 255,0.8)",
-    icon: require("../../assets/images/icons/team.png"),
-  },
-];
+// const taskCategoryList = [
+//   {
+//     id: "1",
+//     title: "Total task",
+//     description: "50 task",
+//     bgColor: Colors.purpleColor,
+//     bgImageColor: "rgba(255, 228, 255,0.8)",
+//     icon: require("../../assets/images/icons/list.png"),
+//   },
+//   {
+//     id: "2",
+//     title: "In-progress",
+//     description: "20 task",
+//     bgColor: Colors.greenColor,
+//     bgImageColor: "rgba(91, 254, 255,0.8)",
+//     icon: require("../../assets/images/icons/calendar.png"),
+//   },
+//   {
+//     id: "3",
+//     title: "Completed",
+//     description: "10 task",
+//     bgColor: Colors.pitchColor,
+//     bgImageColor: "rgba(255, 226, 226,0.8)",
+//     icon: require("../../assets/images/icons/complete.png"),
+//   },
+//   {
+//     id: "4",
+//     title: "Team",
+//     description: "12 member",
+//     bgColor: Colors.pinkColor,
+//     bgImageColor: "rgba(254, 219, 255,0.8)",
+//     icon: require("../../assets/images/icons/team.png"),
+//   },
+// ];
 
 const colorPairs = [
   { fill: Colors.woodenColor, unfill: Colors.lightWoodenColor },
@@ -84,7 +83,7 @@ const TaskScreen = ({ navigation, route }) => {
   const fetchTasks = async (status) => {
     try {
       const response = await fetch(
-        `http://192.168.8.102:8080/api/v1/task/status/${status}`
+        `http://192.168.8.103:8080/api/v1/task/status/${status}`
       );
       const result = await response.json();
 
@@ -323,6 +322,69 @@ const TaskScreen = ({ navigation, route }) => {
 // TaskCategories Component
 const TaskCategories = ({ categoryRef }) => {
   const [currentScrollIndex, setCurrentScrollIndex] = useState(0);
+  const [taskCategoryList, setTaskCategoryList] = useState([]);
+
+  //  get dashbaord summary details .......
+useEffect(() => {
+  const fetchActiveProjects = async () => {
+    try {
+      const response = await fetch(
+        `http://192.168.8.103:8080/api/v1/project/taskDashboard`
+      );
+      const result = await response.json();
+
+      if (result.status === 200) {
+        const projects = result.payload[0];
+
+        // transform response
+        const transformed = projects.map((item) => {
+          let icon;
+          switch (item.id) {
+            case 1:
+              icon = require("../../assets/images/icons/list.png");
+              break;
+            case 2:
+              icon = require("../../assets/images/icons/calendar.png");
+              break;
+            case 3:
+              icon = require("../../assets/images/icons/complete.png");
+              break;
+            case 4:
+              icon = require("../../assets/images/icons/team.png");
+              break;
+            default:
+              icon = null;
+          }
+
+          return {
+            id: String(item.id),
+            title:
+              item.title === "PENDING"
+                ? "In-progress"
+                : item.title.charAt(0).toUpperCase() + item.title.slice(1).toLowerCase(),
+            description:
+              item.id === 4
+                ? `${item.description} member`
+                : `${item.description ?? 0} task`,
+            bgColor: Colors[item.bgColor.split(".")[1]], // convert "Colors.purpleColor" → Colors.purpleColor
+            bgImageColor: item.bgImageColor,
+            icon,
+          };
+        });
+
+        setTaskCategoryList(transformed);
+      } else {
+        setTaskCategoryList([]);
+        console.warn(result.errorMessages?.[0] || "No active projects found");
+      }
+    } catch (error) {
+      console.error("Error fetching active projects:", error);
+    }
+  };
+
+  fetchActiveProjects();
+}, []);
+
 
   const renderItem = ({ item }) => (
     <View

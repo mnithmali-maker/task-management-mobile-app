@@ -104,6 +104,43 @@ const ProjectScreen = ({ navigation, route }) => {
     }
   }, [route.params]);
 
+
+// get dashbaord summary details .......
+    useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      const fetchActiveProjects = async () => {
+        console.warn("fetch");
+        try {
+          const response = await fetch(
+            `http://192.168.8.103:8080/api/v1/memeber/memberCount`
+          );
+          const result = await response.json();
+
+          if (result.status === 200) {
+            const projects = result.payload[0]; // actual list from backend
+          
+
+            console.warn(formattedProjects);
+            setactiveProjects(formattedProjects);
+            // if backend wraps with Collections.singletonList(response)
+            // then result.payload[0] is the actual list
+            //   setProjects(result.payload[0]);
+          } else {
+            setactiveProjects([]);
+            console.warn(
+              result.errorMessages?.[0] || "No active projects found"
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching active projects:", error);
+        }
+      };
+
+      fetchActiveProjects(); // refresh whenever screen is focused
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       const fetchActiveProjects = async () => {
@@ -111,28 +148,13 @@ const ProjectScreen = ({ navigation, route }) => {
         let projectStatus = "TODO";
         try {
           const response = await fetch(
-            `http://192.168.8.102:8080/api/v1/project/active/${projectStatus}`
+            `http://192.168.8.103:8080/api/v1/project/active/${projectStatus}`
           );
           const result = await response.json();
 
           if (result.status === 200) {
             const projects = result.payload[0]; // actual list from backend
-            // console.warn(projects);
-            // const formattedProjects = projects.map((p, index) => ({
-
-            //   id: p.projectId, // or index + 1
-            //   title: p.name,
-            //   date: new Date(p.startDate).toLocaleDateString("en-GB", {
-            //     day: "2-digit",
-            //     month: "short",
-            //     year: "numeric",
-            //   }),
-            //   taskCount: `${p.taskCount.length} task`,
-            //   progress: p.progress || 30,
-            //   members: dummyMembers.slice(0, p.membersCount || 5),
-            //   fill: Colors.tomatoColor,
-            //   unfill: "rgba(218, 152, 135, 0.16)",
-            // }));
+          
             const formattedProjects = projects.map((p, index) => {
               const taskCountMap = p.taskCount || {};
               const totalTasks = Object.values(taskCountMap).reduce(
@@ -215,28 +237,13 @@ const ProjectScreen = ({ navigation, route }) => {
         let projectStatus = "COMPLETED";
         try {
           const response = await fetch(
-            `http:192.168.8.102:8080/api/v1/project/active/${projectStatus}`
+            `http:192.168.8.103:8080/api/v1/project/active/${projectStatus}`
           );
           const result = await response.json();
 
           if (result.status === 200) {
             const projects = result.payload[0]; // actual list from backend
-            // console.warn(projects);
-            // const formattedProjects = projects.map((p, index) => ({
 
-            //   id: p.projectId, // or index + 1
-            //   title: p.name,
-            //   date: new Date(p.startDate).toLocaleDateString("en-GB", {
-            //     day: "2-digit",
-            //     month: "short",
-            //     year: "numeric",
-            //   }),
-            //   taskCount: `${p.taskCount.length} task`,
-            //   progress: p.progress || 30,
-            //   members: dummyMembers.slice(0, p.membersCount || 5),
-            //   fill: Colors.tomatoColor,
-            //   unfill: "rgba(218, 152, 135, 0.16)",
-            // }));
             const formattedProjects = projects.map((p, index) => {
               const taskCountMap = p.taskCount || {};
               const totalTasks = Object.values(taskCountMap).reduce(
@@ -255,31 +262,6 @@ const ProjectScreen = ({ navigation, route }) => {
                 const index = Math.floor(Math.random() * colorValues.length);
                 return colorValues[index];
               }
-              // const progressColor =
-              //   progress === 100 ? Colors.greenColor : Colors.darkBlueColor;
-
-              // const today = new Date();
-              // today.setHours(0, 0, 0, 0); // normalize today
-
-              // const endDate = new Date(p.endDate);
-              // endDate.setHours(0, 0, 0, 0);
-
-              // let deadlineText = null;
-              // let deadlineColor = null;
-
-              // if (endDate < today) {
-              //   deadlineText = " ⚠️ Due date has passed";
-              //   deadlineColor = Colors.redColor;
-              // } else if (endDate.getTime() === today.getTime()) {
-              //   deadlineText = "⏰ Due date is today";
-              //   deadlineColor = Colors.darkGreenColor;
-              // }
-
-              // const today = new Date();
-              // const endDate = new Date(p.endDate); // assuming item.endDate is in ISO format
-              // const isDeadlinePassed = today >= endDate;
-              //  const index = Math.floor(Math.random() * progressColors.length);
-
               return {
                 id: p.projectId, // or index + 1
                 title: p.name,
@@ -302,9 +284,6 @@ const ProjectScreen = ({ navigation, route }) => {
 
             console.warn(formattedProjects);
             setcompleteProjects(formattedProjects);
-            // if backend wraps with Collections.singletonList(response)
-            // then result.payload[0] is the actual list
-            //   setProjects(result.payload[0]);
           } else {
             setcompleteProjects([]);
             console.warn(
