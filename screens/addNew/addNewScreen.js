@@ -74,6 +74,7 @@ const AddNewScreen = ({ navigation, route }) => {
     projectStatus: "TODO",
     taskStatus: "",
     status: true,
+    description: "",
   };
   const [loadValues, setLoadValues] = useState(null);
   useEffect(() => {
@@ -87,7 +88,7 @@ const AddNewScreen = ({ navigation, route }) => {
 
           // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
           const response = await fetch(
-            "http:192.168.8.103:8080/api/v1/project/"
+            "http://192.168.8.103:8080/api/v1/project/"
           );
           const result = await response.json();
           // console.warn(result);
@@ -1120,6 +1121,38 @@ const AddNewScreen = ({ navigation, route }) => {
                     )}
                   </View>
                 )}
+
+                <View
+                  style={{
+                    marginHorizontal: Sizes.fixPadding * 2.0,
+                    marginTop:
+                      from == "task"
+                        ? Sizes.fixPadding * 2.0
+                        : Sizes.fixPadding * 2.0,
+                  }}
+                >
+                  <Text style={{ ...Fonts.blackColor16Medium }}>
+                    Description
+                  </Text>
+                  <View style={styles.infoBox}>
+                    <TextInput
+                      value={values.description}
+                      onChangeText={handleChange("description")}
+                      placeholder="Enter description"
+                      placeholderTextColor={Colors.grayColor}
+                      style={{ ...Fonts.blackColor15Medium, padding: 0 }}
+                      cursorColor={Colors.primaryColor}
+                      selectionColor={Colors.primaryColor}
+                      multiline={true}
+                      numberOfLines={5}
+                    />
+                  </View>
+                  {touched.description && errors.description && (
+                    <Text style={{ color: "red", fontSize: 12 }}>
+                      {errors.description}
+                    </Text>
+                  )}
+                </View>
                 {/* {from === "task" && taskNameInfo()} */}
                 {/* {projectNameInfo()} */}
                 {/* {projectNameInfo()} */}
@@ -1153,6 +1186,7 @@ const AddNewScreen = ({ navigation, route }) => {
                     </Text>
                   )}
                 </View>
+
                 <View
                   style={{
                     marginHorizontal: Sizes.fixPadding * 2,
@@ -1591,5 +1625,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: Colors.primaryColor,
     ...CommonStyles.center,
+  },
+  textArea: {
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    minHeight: 100,
+    marginBottom: 20,
   },
 });

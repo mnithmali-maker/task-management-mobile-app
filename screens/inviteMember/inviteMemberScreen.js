@@ -102,10 +102,10 @@ const InviteMemberScreen = ({ navigation, route }) => {
         if (result.status === 200) {
           console.warn("Success");
           //   console.warn(result?.payload[0]);
-          console.warn(result.payload[0][0].attachment.data);
+          // console.warn(result.payload[0][0].attachment.data);
           const membersList = result.payload[0].map((item, index) => ({
             id: item.id,
-           image: `data:${item.attachment?.mimeType};base64,${item.attachment?.data}`,
+            image: `data:${item.attachment?.mimeType};base64,${item?.attachment?.data}`,
             //   image: getProfileImage(index), // 👇 function to pick image
             name: item.name,
             profession: item.designation, // use designation field
@@ -210,7 +210,7 @@ const InviteMemberScreen = ({ navigation, route }) => {
         style={styles.memberCard}
       >
         <Image
-         source={{ uri: item.image }} 
+          source={{ uri: item.image }}
           style={{ width: 50.0, height: 50.0, borderRadius: 25.0 }}
         />
         <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
