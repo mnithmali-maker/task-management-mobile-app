@@ -217,7 +217,7 @@ const ProjectDetailScreen = ({ navigation, route }) => {
       // console.log("Calling:", `${API_URL}/project/updateStatus/${projectId}/${status}`);
 
       const response = await fetch(
-        `http:192.168.1.12:8080/api/v1/project/updateStatus/${projectId}/${status}`,
+        `http:192.168.1.14:8080/api/v1/project/updateStatus/${projectId}/${status}`,
         {
           method: "PUT",
           headers: {
@@ -517,7 +517,7 @@ const Comments = (props) => {
 
   //     try {
   //       const response = await fetch(
-  //         `http://192.168.1.12:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
+  //         `http://192.168.1.14:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
   //       );
   //       const result = await response.json();
   //       console.log("all issues");
@@ -541,7 +541,7 @@ const Comments = (props) => {
 
         try {
           const response = await fetch(
-            `http://192.168.1.12:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
+            `http://192.168.1.14:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
           );
           const result = await response.json();
           console.log("all issues");
@@ -565,7 +565,7 @@ const Comments = (props) => {
         {/* {commentTitle()} */}
         {comments(dataList)}
       </ScrollView>
-      {typeComment()}
+      {/* {typeComment()} */}
     </View>
   );
   function totalAndAddInfo() {
@@ -958,7 +958,7 @@ const AllTasks = (props) => {
         console.warn("id:" + id);
         try {
           const response = await fetch(
-            `http://192.168.1.12:8080/api/v1/task/${id}`
+            `http://192.168.1.14:8080/api/v1/task/${id}`
           );
           const result = await response.json();
 

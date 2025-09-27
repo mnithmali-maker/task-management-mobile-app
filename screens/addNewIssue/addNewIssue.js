@@ -51,7 +51,8 @@ const AddNewIssue = ({ navigation, route }) => {
   const isUpdateMode = route.params?.issue ? true : false;
   const existingIssue = route.params?.issue || null;
   console.log(isUpdateMode);
-  console.log(existingIssue.issueId);
+  console.warn("isUpdateMode");
+  console.log(existingIssue);
 
   useEffect(() => {
     if (existingIssue != null) {
@@ -61,8 +62,9 @@ const AddNewIssue = ({ navigation, route }) => {
 
   const findCommentsByIssue = async (id) => {
     try {
+      console.log(`http://192.168.1.14:8080/api/v1/issue/${id}`);
       const response = await fetch(
-        `http://192.168.1.12:8080/api/v1/issue/${id}`,
+        `http://192.168.1.14:8080/api/v1/issue/${id}`,
         {
           method: "GET",
           headers: {
@@ -79,19 +81,17 @@ const AddNewIssue = ({ navigation, route }) => {
 
       const result = await response.json();
       console.log("list:", result.payload[0]);
-      const savedAttachments = (values.attachment || []).map((att, index) => ({
-        name: att.imageOriginalName || `file_${index}`, // backend field
-        uri: "http://192.168.1.12:8080/uploads/" + att.filePath, // build correct URL
-        type: att.fileType || "application/octet-stream",
-        saved: true, // mark as already saved
+      const mappedFiles = result.payload[0].attachments.map((file) => ({
+        uri: `data:${file.mimeType};base64,${file.data}`,
+        name: file.imageOriginalName,
+        type: file.mimeType,
+        size: file.fileSize,
       }));
 
       const data = {
-        memberName: "",
-        email: "",
-        attachment: savedAttachments,
-        issueStatus: "TODO",
-        isActive: true,
+        issue: result.payload[0].description,
+        issueStatus: result.payload[0].issueStatus,
+        attachment: mappedFiles,
       };
       setLoadValues(data);
       // setComments(result.payload[0]);
@@ -232,7 +232,7 @@ const AddNewIssue = ({ navigation, route }) => {
 
     formData.append("issue", JSON.stringify(issue));
 
-    const response = await fetch("http://192.168.1.12:8080/api/v1/issue", {
+    const response = await fetch("http://192.168.1.14:8080/api/v1/issue", {
       method: "POST",
       body: formData,
     });

@@ -91,7 +91,7 @@ const AddNewComment = ({ navigation, route }) => {
     };
     try {
       const response = await fetch(
-        "http://192.168.1.12:8080/api/v1/comment/create",
+        "http://192.168.1.14:8080/api/v1/comment/create",
         {
           method: "POST",
           headers: {
@@ -142,7 +142,7 @@ const AddNewComment = ({ navigation, route }) => {
   const editingComment = async () => {
     try {
       const response = await fetch(
-        "http://192.168.1.12:8080/api/v1/comment",
+        "http://192.168.1.14:8080/api/v1/comment",
         {
           method: "PUT",
           headers: {
@@ -243,7 +243,7 @@ const AddNewComment = ({ navigation, route }) => {
   const findCommentsByIssue = async (id) => {
     try {
       const response = await fetch(
-        `http://192.168.1.12:8080/api/v1/comment/getComments/${id}`,
+        `http://192.168.1.14:8080/api/v1/comment/getComments/${id}`,
         {
           method: "GET",
           headers: {
