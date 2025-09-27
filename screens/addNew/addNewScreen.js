@@ -42,7 +42,6 @@ const AddNewScreen = ({ navigation, route }) => {
   const from = route.params.from;
   const mode = route.params.mode;
   const item = route.params.project;
-  // console.warn(item);
   const todayDate = new Date().toLocaleDateString();
 
   const [taskName, setTaskName] = useState("");
@@ -62,7 +61,6 @@ const AddNewScreen = ({ navigation, route }) => {
   const [projectName, setprojectName] = useState("");
   const [isLoading, setisLoading] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
-  // const [teamsList,setTeamList] = useState([]);
 
   const initialValues = {
     taskName: "",
@@ -76,29 +74,169 @@ const AddNewScreen = ({ navigation, route }) => {
     status: true,
     description: "",
   };
+
   const [loadValues, setLoadValues] = useState(null);
+
+  // File opening function - FIXED VERSION
+  const openFile = async (file) => {
+    try {
+      console.log("Opening file:", file.name, "Type:", file.type);
+
+      let fileUri = file.uri;
+
+      // If it's a base64 file (saved attachment), save it to cache first
+      if (fileUri.startsWith("data:")) {
+        const base64Data = fileUri.split(",")[1];
+        const fileName = file.name || `file_${Date.now()}`;
+        fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+
+        await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        console.log("Saved base64 file to:", fileUri);
+      }
+
+      // Check if sharing is available
+      if (await Sharing.isAvailableAsync()) {
+        console.log("Sharing available, opening with shareAsync");
+        await Sharing.shareAsync(fileUri, {
+          mimeType: file.type,
+          UTI: getUTIForFileType(file.type), // iOS only
+        });
+      } else {
+        // Fallback - try to open in browser
+        console.log("Sharing not available, trying WebBrowser");
+        await WebBrowser.openBrowserAsync(fileUri);
+      }
+    } catch (error) {
+      console.error("Error opening file:", error);
+      Alert.alert(
+        "Cannot Open File",
+        `Unable to open ${file.name}. Make sure you have an app installed that can handle this file type.`,
+        [{ text: "OK" }]
+      );
+    }
+  };
+
+  // Helper function for iOS UTIs
+  const getUTIForFileType = (mimeType) => {
+    const utiMap = {
+      "application/pdf": "com.adobe.pdf",
+      "application/msword": "com.microsoft.word.doc",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        "org.openxmlformats.wordprocessingml.document",
+      "application/vnd.ms-excel": "com.microsoft.excel.xls",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        "org.openxmlformats.spreadsheetml.sheet",
+      "image/jpeg": "public.jpeg",
+      "image/png": "public.png",
+      "image/gif": "public.gif",
+    };
+    return utiMap[mimeType] || "public.data";
+  };
+
+  // FIXED downloadToCache function - handles both HTTP URLs and base64 data
+  async function downloadToCache(fileUri, filename) {
+    try {
+      // If it's already a base64 data URI, just save it directly
+      if (fileUri.startsWith("data:")) {
+        const base64Data = fileUri.split(",")[1];
+        const localUri = `${FileSystem.cacheDirectory}${filename}`;
+
+        await FileSystem.writeAsStringAsync(localUri, base64Data, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        console.log("✅ Saved base64 file to:", localUri);
+        return localUri;
+      }
+      // If it's an HTTP URL, download it
+      else if (fileUri.startsWith("http")) {
+        const localUri = `${FileSystem.cacheDirectory}${filename}`;
+        const { uri } = await FileSystem.downloadAsync(fileUri, localUri);
+        console.log("✅ Downloaded HTTP file to:", uri);
+        return uri;
+      }
+      // If it's already a local file path, return it as is
+      else {
+        console.log("✅ Already local file:", fileUri);
+        return fileUri;
+      }
+    } catch (error) {
+      console.error("❌ Error in downloadToCache:", error);
+      throw error;
+    }
+  }
+
+  // FIXED downloadToGallery function
+  const downloadToGallery = async (file) => {
+    try {
+      let fileUri = file.uri;
+
+      // If it's a base64 file, save it to cache first
+      if (fileUri.startsWith("data:")) {
+        const base64Data = fileUri.split(",")[1];
+        const localUri = `${FileSystem.cacheDirectory}${file.name}`;
+
+        await FileSystem.writeAsStringAsync(localUri, base64Data, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        fileUri = localUri;
+      }
+
+      if (Platform.OS === "ios") {
+        // For iOS, use sharing
+        await Sharing.shareAsync(fileUri, { mimeType: file.type });
+      } else {
+        // For Android, use Storage Access Framework
+        const permissions =
+          await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+
+        if (permissions.granted) {
+          const base64Data = await FileSystem.readAsStringAsync(fileUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          const newUri =
+            await FileSystem.StorageAccessFramework.createFileAsync(
+              permissions.directoryUri,
+              file.name,
+              file.type
+            );
+
+          await FileSystem.writeAsStringAsync(newUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          Alert.alert("Success", `${file.name} saved successfully!`);
+        } else {
+          Alert.alert(
+            "Permission denied",
+            "Cannot save file without permission."
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Download error:", err);
+      Alert.alert("Error", "Failed to save file.");
+    }
+  };
+
   useEffect(() => {
     console.warn("called...");
     if (from === "task") {
       const fetchProjects = async () => {
         console.warn("calledeee...");
         try {
-          // const url = `${API_URL}/project/`;
-          // console.log(url);
-
-          // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
           const response = await fetch(
             "http://192.168.8.103:8080/api/v1/project/"
           );
           const result = await response.json();
-          // console.warn(result);
 
           if (result.status === 200) {
-            console.warn("Suucess");
-            // console.warn(result.payload[0]);
+            console.warn("Success");
             const projectNames = result.payload[0].map((item) => item.name);
             console.warn(projectNames);
-            setSelectedProject(result.payload[0]); // because payload is wrapped in a list
+            setSelectedProject(result.payload[0]);
           } else {
             console.warn(result.errorMessages?.[0] || "No records found");
           }
@@ -114,45 +252,46 @@ const AddNewScreen = ({ navigation, route }) => {
   }, []);
 
   useEffect(() => {
-    // console.warn(mode,from);
     if (mode == "edit" && from == "project") {
       const fetchProjects = async () => {
         setisLoading(true);
-        // console.warn(item);
         console.warn("get existing project...");
         try {
           const projectId = item?.id;
-          // const url = `${API_URL}/project/`;
-          // console.log(url);
-
-          // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
           const response = await fetch(
             `http://192.168.8.103:8080/api/v1/project/${projectId}`
           );
           const result = await response.json();
-          // console.warn(result);
 
           if (result.status === 200) {
             setisLoading(false);
-            console.warn("Suucess ooo");
+            console.warn("Success ooo");
             const values = result.payload[0];
             const formatDate = (dateStr) => {
               if (!dateStr) return "";
-              const [year, month, day] = dateStr.split("-"); // "2025-08-14" → ["2025","08","14"]
+              const [year, month, day] = dateStr.split("-");
               return `${day}/${month}/${year}`;
             };
-            // console.warn(values.attachments);
-            // Map backend attachments into your frontend format
+
             const savedAttachments = (values.attachments || []).map(
-              (att, index) => ({
-                name: att.imageOriginalName || `file_${index}`, // backend field
-                uri: "http://192.168.8.103:8080/uploads/" + att.filePath, // build correct URL
-                type: att.fileType || "application/octet-stream",
-                saved: true, // mark as already saved
-              })
+              (att, index) => {
+                const fileName =
+                  att.imageOriginalName ||
+                  att.filePath?.split(/[/\\]/).pop() ||
+                  `file_${index}`;
+                let uri = `data:${att.mimeType};base64,${att?.data}`;
+
+                console.warn("uri:" + uri);
+                return {
+                  name: fileName,
+                  uri,
+                  type: att.mimeType || "application/octet-stream",
+                  saved: true,
+                };
+              }
             );
+
             const initialValues = {
-              // taskName: "",
               projectName: values?.name,
               startingDate: values?.startDate
                 ? formatDate(values.startDate)
@@ -160,13 +299,14 @@ const AddNewScreen = ({ navigation, route }) => {
               endingDate: values?.endDate ? formatDate(values.endDate) : "",
               projectStatus: values?.projectStatus,
               status: values?.status,
-              // selectedProject: null,
               selectedTeam: "",
+              description: values?.description,
             };
-            // console.warn(initialValues);
+
             setLoadValues(initialValues);
             setAttachments(savedAttachments);
             console.warn(values?.teamMembers);
+
             const membersList = (values?.teamMembers || []).map((item) => ({
               id: item.id,
               name: item.name,
@@ -177,11 +317,6 @@ const AddNewScreen = ({ navigation, route }) => {
                 : null,
             }));
             setSelectedMembers(membersList);
-
-            // setSelectedMembers(values?.teamMembers);
-            // const projectNames = result.payload[0].map((item) => item.name);
-            // console.warn(projectNames);
-            // setSelectedProject(result.payload[0]); // because payload is wrapped in a list
           } else {
             console.warn(result.errorMessages?.[0] || "No records found");
           }
@@ -198,45 +333,47 @@ const AddNewScreen = ({ navigation, route }) => {
   }, []);
 
   useEffect(() => {
-    // console.warn(mode,from);
     if (mode == "edit" && from == "task") {
       const fetchProjects = async () => {
         setisLoading(true);
-        // console.warn(item);
-        console.warn("get existing project...");
+        console.warn("get existing task...");
         try {
           const projectId = item?.id;
-          // const url = `${API_URL}/project/`;
-          // console.log(url);
-
-          // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
           const response = await fetch(
             `http://192.168.8.103:8080/api/v1/task/task/${projectId}`
           );
           const result = await response.json();
-          // console.warn(result);
 
           if (result.status === 200) {
             setisLoading(false);
-            console.warn("Suucess ooo");
+            console.warn("Success ooo");
             const values = result.payload[0];
+            console.warn(values);
             const formatDate = (dateStr) => {
               if (!dateStr) return "";
-              const [year, month, day] = dateStr.split("-"); // "2025-08-14" → ["2025","08","14"]
+              const [year, month, day] = dateStr.split("-");
               return `${day}/${month}/${year}`;
             };
-            // console.warn(values.attachments);
-            // Map backend attachments into your frontend format
+
             const savedAttachments = (values.attachments || []).map(
-              (att, index) => ({
-                name: att.imageOriginalName || `file_${index}`, // backend field
-                uri: "http://192.168.8.103:8080/task/uploads/" + att.filePath, // build correct URL
-                type: att.fileType || "application/octet-stream",
-                saved: true, // mark as already saved
-              })
+              (att, index) => {
+                const fileName =
+                  att.imageOriginalName ||
+                  att.filePath?.split(/[/\\]/).pop() ||
+                  `file_${index}`;
+                let uri = `data:${att.mimeType};base64,${att?.data}`;
+
+                console.warn("uri:" + uri);
+                return {
+                  name: fileName,
+                  uri,
+                  type: att.mimeType || "application/octet-stream",
+                  saved: true,
+                };
+              }
             );
+
             const initialValues = {
-              // taskName: "",
               taskId: values?.taskId,
               taskName: values?.name,
               selectedProject: values?.project,
@@ -246,13 +383,13 @@ const AddNewScreen = ({ navigation, route }) => {
               endingDate: values?.endDate ? formatDate(values.endDate) : "",
               projectStatus: values?.projectStatus,
               status: values?.status,
-              // selectedProject: null,
               selectedTeam: "",
+              description: values?.description,
             };
-            // console.warn(initialValues);
+
             setLoadValues(initialValues);
             setAttachments(savedAttachments);
-            console.warn(values?.teamMembers);
+
             const membersList = (values?.teamMembers || []).map((item) => ({
               id: item.id,
               name: item.name,
@@ -263,17 +400,12 @@ const AddNewScreen = ({ navigation, route }) => {
                 : null,
             }));
             setSelectedMembers(membersList);
-
-            // setSelectedMembers(values?.teamMembers);
-            // const projectNames = result.payload[0].map((item) => item.name);
-            // console.warn(projectNames);
-            // setSelectedProject(result.payload[0]); // because payload is wrapped in a list
           } else {
             console.warn(result.errorMessages?.[0] || "No records found");
           }
         } catch (error) {
           setisLoading(false);
-          console.error("Error fetching projects:", error);
+          console.error("Error fetching tasks:", error);
         } finally {
           setisLoading(false);
         }
@@ -281,40 +413,6 @@ const AddNewScreen = ({ navigation, route }) => {
 
       fetchProjects();
     }
-  }, []);
-
-  useEffect(() => {
-    console.warn("called member...");
-
-    const fetchTeamMembers = async () => {
-      console.warn("member...");
-      try {
-        // const url = `${API_URL}/project/`;
-        // console.log(url);
-        const status = true;
-        // const response = await fetch(`${API_URL}/project/`); // change localhost to your backend IP if using mobile
-        const response = await fetch(
-          `http://192.168.8.103:8080/api/v1/member/status/${status}`
-        );
-        const result = await response.json();
-        console.warn(result);
-
-        if (result.status === 200) {
-          console.warn("Suucess");
-          // console.warn(result.payload[0]);
-          // const projectNames = result.payload[0].map((item) => item.name);
-          // console.warn(projectNames);
-          // setSelectedProject(result.payload[0]); // because payload is wrapped in a list
-        } else {
-          console.warn(result.errorMessages?.[0] || "No records found");
-        }
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-      } finally {
-        setisLoading(false);
-      }
-      fetchTeamMembers();
-    };
   }, []);
 
   const validationSchema = Yup.object().shape({
@@ -337,7 +435,6 @@ const AddNewScreen = ({ navigation, route }) => {
           const { startingDate } = this.parent;
           if (!startingDate || !value) return true;
 
-          // Parse dd/mm/yyyy → Date
           const [startDay, startMonth, startYear] = startingDate
             .split("/")
             .map(Number);
@@ -349,14 +446,6 @@ const AddNewScreen = ({ navigation, route }) => {
           return endDateObj >= startDateObj;
         }
       ),
-    // selectedProject:
-    //   from === "task"
-    //     ? Yup.string().required("Project selection is required")
-    //     : Yup.string(),
-    // selectedTeam:
-    //   from === "task"
-    //     ? Yup.string().required("Project selection is required")
-    //     : Yup.string(),
   });
 
   useEffect(() => {
@@ -386,7 +475,7 @@ const AddNewScreen = ({ navigation, route }) => {
       const file = {
         name: result.assets[0].uri.split("/").pop(),
         uri: result.assets[0].uri,
-        type: "image",
+        type: "image/jpeg",
       };
       setAttachments((prev) => [...prev, file]);
     }
@@ -404,16 +493,17 @@ const AddNewScreen = ({ navigation, route }) => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
       quality: 1,
     });
 
     if (!result.canceled) {
       const file = {
-        name: result.assets[0].uri.split("/").pop(),
+        name:
+          result.assets[0].fileName || result.assets[0].uri.split("/").pop(),
         uri: result.assets[0].uri,
-        type: "image",
+        type: result.assets[0].mimeType || "image/jpeg",
       };
       setAttachments((prev) => [...prev, file]);
     }
@@ -432,271 +522,17 @@ const AddNewScreen = ({ navigation, route }) => {
       ],
       copyToCacheDirectory: true,
     });
-    console.warn(result.assets[0].mimeType);
-    // if (result.type === "success") {
-    const file = {
-      name: result.assets[0].name,
-      uri: result.assets[0].uri,
-      type: result.assets[0].mimeType,
-    };
-    setAttachments((prev) => [...prev, file]);
-    // }
+
+    if (result.assets && result.assets.length > 0) {
+      const file = {
+        name: result.assets[0].name,
+        uri: result.assets[0].uri,
+        type: result.assets[0].mimeType || "application/octet-stream",
+      };
+      setAttachments((prev) => [...prev, file]);
+    }
   };
 
-  // ---------- UI Components ----------
-
-  const attachmentSheet = () => (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={showAttachmentSheet}
-      onRequestClose={() => setShowAttachmentSheet(false)}
-    >
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={() => setShowAttachmentSheet(false)}
-        style={styles.modalBackground}
-      >
-        <View style={{ justifyContent: "flex-end", flex: 1 }}>
-          <TouchableOpacity activeOpacity={1} style={styles.sheetWrapStyle}>
-            <Text style={Fonts.blackColor16SemiBold}>Choose attachment</Text>
-
-            {optionSort({
-              iconName: "camera",
-              color: Colors.darkBlueColor,
-              option: "Camera",
-              onPress: () => {
-                setShowAttachmentSheet(false);
-                setTimeout(openCamera, 300);
-              },
-            })}
-            {optionSort({
-              iconName: "image",
-              color: Colors.darkGreenColor,
-              option: "Gallery",
-              onPress: () => {
-                setShowAttachmentSheet(false);
-                setTimeout(openDocumentPicker, 300);
-              },
-            })}
-            {/* {optionSort({
-              iconName: "folder",
-              color: Colors.darkOrangeColor,
-              option: "Files",
-              onPress: () => {
-                setShowAttachmentSheet(false);
-                setTimeout(openDocumentPicker, 300);
-              },
-            })} */}
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  );
-
-  const attachmentsDisplay = () =>
-    attachments.length > 0 && (
-      <View
-        style={{
-          marginHorizontal: Sizes.fixPadding * 2,
-          marginBottom: Sizes.fixPadding * 2,
-        }}
-      >
-        <Text style={Fonts.blackColor16Medium}>Selected Files</Text>
-
-        {attachments.map((file, index) => {
-          const fileName = file.name?.toLowerCase() || "";
-          const mimeType = file.type?.toLowerCase() || "";
-
-          const isImage =
-            mimeType.includes("image") ||
-            fileName.endsWith(".jpg") ||
-            fileName.endsWith(".jpeg") ||
-            fileName.endsWith(".png") ||
-            fileName.endsWith(".gif") ||
-            fileName.endsWith(".webp");
-
-          const isPDF = mimeType.includes("pdf") || fileName.endsWith(".pdf");
-          const isWord =
-            mimeType.includes("word") ||
-            fileName.endsWith(".doc") ||
-            fileName.endsWith(".docx");
-          const isExcel =
-            mimeType.includes("excel") ||
-            fileName.endsWith(".xls") ||
-            fileName.endsWith(".xlsx");
-
-          // Download to gallery function (does not modify attachments)
-          const downloadToGallery = async (file) => {
-            try {
-              // Step 1: download remote file to app cache
-              const localUri = `${FileSystem.cacheDirectory}${file.name}`;
-              const { uri } = await FileSystem.downloadAsync(
-                file.uri,
-                localUri
-              );
-
-              if (Platform.OS === "android") {
-                // Step 2: save to user-selected folder
-                const permissions =
-                  await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-
-                if (permissions.granted) {
-                  const base64 = await FileSystem.readAsStringAsync(uri, {
-                    encoding: FileSystem.EncodingType.Base64,
-                  });
-
-                  const newUri =
-                    await FileSystem.StorageAccessFramework.createFileAsync(
-                      permissions.directoryUri,
-                      file.name,
-                      file.type || "application/octet-stream"
-                    );
-
-                  await FileSystem.writeAsStringAsync(newUri, base64, {
-                    encoding: FileSystem.EncodingType.Base64,
-                  });
-
-                  Alert.alert("Success", `${file.name} saved successfully!`);
-                } else {
-                  Alert.alert(
-                    "Permission denied",
-                    "Cannot save file without permission."
-                  );
-                }
-              } else {
-                // iOS: fallback share
-                await shareAsync(uri);
-              }
-            } catch (error) {
-              console.log("Download error:", error);
-              Alert.alert("Error", "Failed to download file.");
-            }
-          };
-
-          return (
-            <View key={index} style={styles.attachmentRow}>
-              {/* Open file on tap */}
-              <TouchableOpacity
-                style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
-                onPress={() => WebBrowser.openBrowserAsync(file.uri)}
-              >
-                {isImage ? (
-                  <Image
-                    source={{ uri: file.uri }}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 4,
-                      marginRight: Sizes.fixPadding,
-                    }}
-                  />
-                ) : (
-                  <MaterialIcons
-                    name={
-                      isPDF
-                        ? "picture-as-pdf"
-                        : isWord
-                        ? "article"
-                        : isExcel
-                        ? "grid-on"
-                        : "insert-drive-file"
-                    }
-                    size={24}
-                    color={Colors.primaryColor}
-                    style={{ marginRight: Sizes.fixPadding }}
-                  />
-                )}
-
-                <Text
-                  style={{ ...Fonts.blackColor15Medium, flex: 1 }}
-                  numberOfLines={1}
-                >
-                  {file.name}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => downloadToGallery(file)}
-                style={{ marginHorizontal: Sizes.fixPadding }}
-              >
-                <MaterialIcons name="file-download" size={24} color="blue" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setAttachments((prev) => prev.filter((_, i) => i !== index));
-                }}
-                style={{ marginLeft: Sizes.fixPadding }}
-              >
-                <MaterialIcons name="close" size={24} color="green" />
-              </TouchableOpacity>
-            </View>
-          );
-        })}
-      </View>
-    );
-  const optionSort = ({ iconName, color, option, onPress }) => (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={onPress}
-      style={styles.optionRow}
-    >
-      <View style={styles.optionCircle}>
-        <Ionicons name={iconName} color={color} size={22} />
-      </View>
-      <Text
-        style={{
-          ...Fonts.blackColor16Medium,
-          flex: 1,
-          marginLeft: Sizes.fixPadding + 5,
-        }}
-        numberOfLines={1}
-      >
-        {option}
-      </Text>
-    </TouchableOpacity>
-  );
-  function loadingDialog() {
-    return (
-      <Modal animationType="fade" transparent={true} visible={isLoading}>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <View style={{ justifyContent: "center", flex: 1 }}>
-            <TouchableOpacity
-              activeOpacity={1}
-              onPress={() => {}}
-              style={styles.dialogStyle}
-            >
-              <View style={{ ...CommonStyles.center }}>
-                <Circle
-                  size={50}
-                  color={Colors.primaryColor}
-                  style={{ marginTop: Sizes.fixPadding - 5.0 }}
-                />
-                <Text
-                  style={{
-                    ...Fonts.primaryColor20Medium,
-                    marginTop: Sizes.fixPadding + 2.0,
-                  }}
-                >
-                  Please wait
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    );
-  }
-
-  async function downloadToCache(url, filename) {
-    const localUri = `${FileSystem.cacheDirectory}${filename}`;
-    const { uri } = await FileSystem.downloadAsync(url, localUri);
-    console.log("✅ Downloaded to:", uri);
-    return uri; // something like file:///data/user/0/host.exp.exponent/cache/...pdf
-  }
   const handleAdd = async (values) => {
     console.log("ddddd");
     // console.warn(values);
@@ -759,6 +595,7 @@ const AddNewScreen = ({ navigation, route }) => {
           projectStatus: values?.projectStatus,
           status: values?.status,
           teamMembers: selectedMembers.map((m) => m.id),
+          description: values?.description,
           // endDate:values?.endingDate,
           // team: selectedTeam,
         };
@@ -876,6 +713,7 @@ const AddNewScreen = ({ navigation, route }) => {
           status: values?.status,
           taskStatus: values?.projectStatus,
           teamMembers: selectedMembers.map((m) => m.id),
+          description: values?.description,
         };
         formData.append("task", JSON.stringify(task));
         console.warn(formData);
@@ -947,12 +785,223 @@ const AddNewScreen = ({ navigation, route }) => {
       gif: "image/gif",
       bmp: "image/bmp",
       heic: "image/heic",
+      xls: "application/vnd.ms-excel",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     };
 
-    return mimeMap[extension] || "application/octet-stream"; // fallback if unknown
+    return mimeMap[extension] || "application/octet-stream";
   };
 
-  // ---------- Form Fields ----------
+  // ---------- UI Components ----------
+
+  const attachmentSheet = () => (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={showAttachmentSheet}
+      onRequestClose={() => setShowAttachmentSheet(false)}
+    >
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => setShowAttachmentSheet(false)}
+        style={styles.modalBackground}
+      >
+        <View style={{ justifyContent: "flex-end", flex: 1 }}>
+          <TouchableOpacity activeOpacity={1} style={styles.sheetWrapStyle}>
+            <Text style={Fonts.blackColor16SemiBold}>Choose attachment</Text>
+
+            {optionSort({
+              iconName: "camera",
+              color: Colors.darkBlueColor,
+              option: "Camera",
+              onPress: () => {
+                setShowAttachmentSheet(false);
+                setTimeout(openCamera, 300);
+              },
+            })}
+            {optionSort({
+              iconName: "image",
+              color: Colors.darkGreenColor,
+              option: "Gallery",
+              onPress: () => {
+                setShowAttachmentSheet(false);
+                setTimeout(openGallery, 300);
+              },
+            })}
+            {optionSort({
+              iconName: "folder",
+              color: Colors.darkOrangeColor,
+              option: "Files",
+              onPress: () => {
+                setShowAttachmentSheet(false);
+                setTimeout(openDocumentPicker, 300);
+              },
+            })}
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
+  const attachmentsDisplay = () =>
+    attachments.length > 0 && (
+      <View
+        style={{
+          marginHorizontal: Sizes.fixPadding * 2,
+          marginBottom: Sizes.fixPadding * 2,
+        }}
+      >
+        <Text style={Fonts.blackColor16Medium}>Selected Files</Text>
+
+        {attachments.map((file, index) => {
+          const fileName = file.name?.toLowerCase() || "";
+          const mimeType = file.type?.toLowerCase() || "";
+
+          const isImage = mimeType.includes("image");
+          const isPDF = mimeType.includes("pdf");
+          const isWord =
+            mimeType.includes("word") ||
+            fileName.endsWith(".doc") ||
+            fileName.endsWith(".docx");
+          const isExcel =
+            mimeType.includes("excel") ||
+            fileName.endsWith(".xls") ||
+            fileName.endsWith(".xlsx");
+
+          const getFileIcon = () => {
+            if (isImage) return "image";
+            if (isPDF) return "picture-as-pdf";
+            if (isWord) return "article";
+            if (isExcel) return "grid-on";
+            return "insert-drive-file";
+          };
+
+          const getIconColor = () => {
+            if (isImage) return Colors.greenColor;
+            if (isPDF) return Colors.redColor;
+            if (isWord) return Colors.blueColor;
+            if (isExcel) return Colors.darkGreenColor;
+            return Colors.grayColor;
+          };
+
+          return (
+            <View key={index} style={styles.attachmentRow}>
+              <TouchableOpacity
+                style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
+                onPress={() => openFile(file)}
+              >
+                {isImage ? (
+                  <Image
+                    source={{ uri: file?.uri }}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 4,
+                      marginRight: Sizes.fixPadding,
+                    }}
+                  />
+                ) : (
+                  <MaterialIcons
+                    name={getFileIcon()}
+                    size={24}
+                    color={getIconColor()}
+                    style={{ marginRight: Sizes.fixPadding }}
+                  />
+                )}
+
+                <Text
+                  style={{ ...Fonts.blackColor15Medium, flex: 1 }}
+                  numberOfLines={1}
+                >
+                  {file.name}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 10,
+                    color: Colors.grayColor,
+                    marginLeft: 5,
+                  }}
+                >
+                  {file.saved ? "(saved)" : "(new)"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => downloadToGallery(file)}
+                style={{ marginHorizontal: Sizes.fixPadding }}
+              >
+                <MaterialIcons name="file-download" size={24} color="blue" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setAttachments((prev) => prev.filter((_, i) => i !== index));
+                }}
+                style={{ marginLeft: Sizes.fixPadding }}
+              >
+                <MaterialIcons name="close" size={24} color="red" />
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </View>
+    );
+
+  const optionSort = ({ iconName, color, option, onPress }) => (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      style={styles.optionRow}
+    >
+      <View style={styles.optionCircle}>
+        <Ionicons name={iconName} color={color} size={22} />
+      </View>
+      <Text
+        style={{
+          ...Fonts.blackColor16Medium,
+          flex: 1,
+          marginLeft: Sizes.fixPadding + 5,
+        }}
+        numberOfLines={1}
+      >
+        {option}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  function loadingDialog() {
+    return (
+      <Modal animationType="fade" transparent={true} visible={isLoading}>
+        <TouchableOpacity
+          activeOpacity={1}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <View style={{ justifyContent: "center", flex: 1 }}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => {}}
+              style={styles.dialogStyle}
+            >
+              <View style={{ ...CommonStyles.center }}>
+                <Circle
+                  size={50}
+                  color={Colors.primaryColor}
+                  style={{ marginTop: Sizes.fixPadding - 5.0 }}
+                />
+                <Text
+                  style={{
+                    ...Fonts.primaryColor20Medium,
+                    marginTop: Sizes.fixPadding + 2.0,
+                  }}
+                >
+                  Please wait
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  }
 
   return (
     <AlertNotificationRoot>
@@ -977,8 +1026,6 @@ const AddNewScreen = ({ navigation, route }) => {
           initialValues={loadValues || initialValues}
           validationSchema={validationSchema}
           onSubmit={(values) => {
-            console.warn("dddddd");
-            console.warn("for:" + values);
             handleAdd(values);
           }}
         >
@@ -990,22 +1037,17 @@ const AddNewScreen = ({ navigation, route }) => {
             errors,
             touched,
           }) => {
-            console.log(errors);
-
             return (
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 automaticallyAdjustKeyboardInsets
               >
                 {loadingDialog()}
-                {/* {calendarDialog(setFieldValue)} */}
                 {from == "task" && (
                   <View style={{ margin: Sizes.fixPadding * 2 }}>
                     <Text style={Fonts.blackColor16Medium}>Task name</Text>
                     <View style={styles.infoBox}>
                       <TextInput
-                        // value={taskName}
-                        // onChangeText={setTaskName}
                         value={values.taskName}
                         onChangeText={handleChange("taskName")}
                         placeholder="Enter task name"
@@ -1077,7 +1119,6 @@ const AddNewScreen = ({ navigation, route }) => {
                                 textStyle={{ ...Fonts.blackColor16Medium }}
                                 onPress={() => {
                                   setFieldValue("selectedProject", option);
-                                  // setSelectedTeam(option);
                                   setShowMenu(false);
                                 }}
                               >
@@ -1094,10 +1135,7 @@ const AddNewScreen = ({ navigation, route }) => {
                   <View
                     style={{
                       marginHorizontal: Sizes.fixPadding * 2.0,
-                      marginTop:
-                        from == "task"
-                          ? Sizes.fixPadding * 2.0
-                          : Sizes.fixPadding * 2.0,
+                      marginTop: Sizes.fixPadding * 2.0,
                     }}
                   >
                     <Text style={{ ...Fonts.blackColor16Medium }}>
@@ -1125,10 +1163,7 @@ const AddNewScreen = ({ navigation, route }) => {
                 <View
                   style={{
                     marginHorizontal: Sizes.fixPadding * 2.0,
-                    marginTop:
-                      from == "task"
-                        ? Sizes.fixPadding * 2.0
-                        : Sizes.fixPadding * 2.0,
+                    marginTop: Sizes.fixPadding * 2.0,
                   }}
                 >
                   <Text style={{ ...Fonts.blackColor16Medium }}>
@@ -1153,10 +1188,7 @@ const AddNewScreen = ({ navigation, route }) => {
                     </Text>
                   )}
                 </View>
-                {/* {from === "task" && taskNameInfo()} */}
-                {/* {projectNameInfo()} */}
-                {/* {projectNameInfo()} */}
-                {/* {startingDateInfo()} */}
+
                 <View style={{ margin: Sizes.fixPadding * 2 }}>
                   <Text style={Fonts.blackColor16Medium}>Starting date</Text>
                   <TouchableOpacity
@@ -1221,8 +1253,7 @@ const AddNewScreen = ({ navigation, route }) => {
                     </Text>
                   )}
                 </View>
-                {/* {endingDateInfo()} */}
-                {/* {attachmentInfo()} */}
+
                 <View style={{ margin: Sizes.fixPadding * 2 }}>
                   <Text style={Fonts.blackColor16Medium}>Attachment</Text>
                   <TouchableOpacity
@@ -1308,8 +1339,6 @@ const AddNewScreen = ({ navigation, route }) => {
                         />
                       </View>
                     </View>
-
-                    {/* Status Toggle */}
                   </Touchable>
                 </View>
                 <View style={{ margin: Sizes.fixPadding * 2 }}>
@@ -1392,7 +1421,7 @@ const AddNewScreen = ({ navigation, route }) => {
                     {values.status ? "Active" : "Inactive"}
                   </Text>
                 </View>
-                {/* {memberInfo()} */}
+
                 <Button
                   buttonText={
                     from === "task"
@@ -1408,8 +1437,6 @@ const AddNewScreen = ({ navigation, route }) => {
                   onPress={handleSubmit}
                 />
 
-                {/* {addButton()} */}
-                {/* {calendarDialog()} */}
                 {attachmentSheet()}
 
                 <Modal
@@ -1509,9 +1536,9 @@ const AddNewScreen = ({ navigation, route }) => {
                             onPress={() => {
                               const chosenDate = selectedDate || todayDate;
                               if (dateSelectionFor === "start") {
-                                setFieldValue("startingDate", chosenDate); // ✅ set Formik value
+                                setFieldValue("startingDate", chosenDate);
                               } else {
-                                setFieldValue("endingDate", chosenDate); // ✅ set Formik value
+                                setFieldValue("endingDate", chosenDate);
                               }
                               setShowCalendar(false);
                             }}
@@ -1538,7 +1565,6 @@ const AddNewScreen = ({ navigation, route }) => {
 
 export default AddNewScreen;
 
-// ---------- Styles ----------
 const styles = StyleSheet.create({
   infoBox: {
     borderWidth: 1,
