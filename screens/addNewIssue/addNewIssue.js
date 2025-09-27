@@ -61,6 +61,7 @@ const AddNewIssue = ({ navigation, route }) => {
   }, [existingIssue]);
 
   const findCommentsByIssue = async (id) => {
+    setisLoading(true);
     try {
       console.log(`http://192.168.1.14:8080/api/v1/issue/${id}`);
       const response = await fetch(
@@ -95,6 +96,7 @@ const AddNewIssue = ({ navigation, route }) => {
         attachment: mappedFiles,
       };
       setLoadValues(data);
+      setisLoading(false);
       // setComments(result.payload[0]);
       return result;
     } catch (error) {
@@ -205,9 +207,10 @@ const AddNewIssue = ({ navigation, route }) => {
     setisLoading(true);
 
     let formData = new FormData();
-
+    console.log("attachement 2");
+    console.log(values.attachment);
     // loop through multiple attachments
-    for (let i = 0; i < values.attachment.length; i++) {
+    for (let i = 0; i < values?.attachment?.length; i++) {
       const file = values.attachment[i];
       const fileUri = file.uri;
       const mimeType = getMimeType(file.name || file.uri);
@@ -223,6 +226,8 @@ const AddNewIssue = ({ navigation, route }) => {
         type: mimeType,
       });
     }
+
+    console.log("handleSubmit 2");
 
     const issue = {
       issueId: isUpdateMode ? values.issueId : null,
@@ -246,7 +251,9 @@ const AddNewIssue = ({ navigation, route }) => {
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: "Success",
-        textBody: "New Issue is added successfully",
+        textBody: isUpdateMode
+          ? "Issue is updated successfully"
+          : "New Issue is added successfully",
         button: "Close",
         autoClose: 2000,
       });
