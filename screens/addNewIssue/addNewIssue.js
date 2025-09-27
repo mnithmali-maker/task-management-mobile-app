@@ -37,7 +37,16 @@ const teamOptions = [
 ];
 
 const AddNewIssue = ({ navigation, route }) => {
+  const initialValues = {
+    memberName: "",
+    email: "",
+    attachment: [],
+    issueStatus: "TODO",
+    isActive: true,
+  };
   const [isLoading, setisLoading] = useState(false);
+  const [exIssue, setExIssue] = useState(null);
+  const [loadvalues, setLoadValues] = useState(initialValues);
   // Check if we are in update mode
   const isUpdateMode = route.params?.issue ? true : false;
   const existingIssue = route.params?.issue || null;
@@ -70,7 +79,22 @@ const AddNewIssue = ({ navigation, route }) => {
 
       const result = await response.json();
       console.log("list:", result.payload[0]);
-      setComments(result.payload[0]);
+      const savedAttachments = (values.attachment || []).map((att, index) => ({
+        name: att.imageOriginalName || `file_${index}`, // backend field
+        uri: "http://192.168.1.12:8080/uploads/" + att.filePath, // build correct URL
+        type: att.fileType || "application/octet-stream",
+        saved: true, // mark as already saved
+      }));
+
+      const data = {
+        memberName: "",
+        email: "",
+        attachment: savedAttachments,
+        issueStatus: "TODO",
+        isActive: true,
+      };
+      setLoadValues(data);
+      // setComments(result.payload[0]);
       return result;
     } catch (error) {
       // Handle network/parse errors
@@ -240,14 +264,8 @@ const AddNewIssue = ({ navigation, route }) => {
   return (
     <AlertNotificationRoot>
       <Formik
-        initialValues={{
-          memberName: existingIssue?.name || "",
-          email: existingIssue?.email || "",
-          attachment: existingIssue?.attachment || [],
-          issueStatus: existingIssue?.issueStatus || "TODO",
-          isActive: true,
-        }}
         enableReinitialize={true}
+        initialValues={loadvalues || initialValues}
         // validationSchema={validationSchema}
         onSubmit={(values) => {
           console.log(values);
