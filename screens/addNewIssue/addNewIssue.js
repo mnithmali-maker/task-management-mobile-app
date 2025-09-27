@@ -89,6 +89,7 @@ const AddNewIssue = ({ navigation, route }) => {
       }));
 
       const data = {
+        issueId: result.payload[0].issueId,
         issue: result.payload[0].description,
         issueStatus: result.payload[0].issueStatus,
         attachment: mappedFiles,
@@ -224,7 +225,7 @@ const AddNewIssue = ({ navigation, route }) => {
     }
 
     const issue = {
-      issueId: null,
+      issueId: isUpdateMode ? values.issueId : null,
       description: values.issue,
       projectId: "01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1",
       issueStatus: values.issueStatus,
