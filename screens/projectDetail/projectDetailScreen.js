@@ -13,7 +13,13 @@ import {
   KeyboardAvoidingView,
   Alert,
 } from "react-native";
-import React, { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   Colors,
   Fonts,
@@ -36,67 +42,6 @@ import {
   Toast,
 } from "react-native-alert-notification";
 import { useFocusEffect } from "@react-navigation/native";
-
-// const optionsList = ['Delete project', 'Share project', 'Copy link', 'Complete Project'];
-
-const progressTaskList = [
-  {
-    id: "1",
-    title: "Deshboard ui design",
-    description: "Shopping app project",
-    progress: 0.6,
-    fill: Colors.blueColor,
-    unfill: Colors.lightBlueColor,
-  },
-  {
-    id: "2",
-    title: "Email reply & testing",
-    description: "Green project",
-    progress: 0.2,
-    fill: Colors.tomatoColor,
-    unfill: Colors.lightTomatoColor,
-  },
-  {
-    id: "3",
-    title: "User interface design",
-    description: "Food delivery app project",
-    progress: 0.4,
-    fill: Colors.yellowColor,
-    unfill: Colors.lightYellowColor,
-  },
-  {
-    id: "4",
-    title: "Mobile application  design",
-    description: "Shopping app project",
-    progress: 0.6,
-    fill: Colors.woodenColor,
-    unfill: Colors.lightWoodenColor,
-  },
-  {
-    id: "5",
-    title: "UX member payment",
-    description: "Microsoft product  design",
-    progress: 0.5,
-    fill: Colors.parrotColor,
-    unfill: Colors.lightParrotColor,
-  },
-  {
-    id: "6",
-    title: "Mobile application design",
-    description: "Shopping app project",
-    progress: 0.6,
-    fill: Colors.blueColor,
-    unfill: Colors.lightBlueColor,
-  },
-  {
-    id: "7",
-    title: "Deshboard ui design",
-    description: "Shopping app project",
-    progress: 0.5,
-    fill: Colors.tomatoColor,
-    unfill: Colors.lightTomatoColor,
-  },
-];
 
 const attachFilesList = [
   {
@@ -146,59 +91,6 @@ const teamsList = [
     image: require("../../assets/images/users/user5.png"),
     name: "Cameron Williamson",
     profession: "flutter develpoer",
-  },
-];
-
-const commentsList = [
-  {
-    id: "1",
-    image: require("../../assets/images/users/user2.png"),
-    name: "Guy Hawkins",
-    profession: "Designer",
-    createdTime: "1 hour ago",
-    description:
-      "Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi",
-  },
-  {
-    id: "2",
-    image: require("../../assets/images/users/user3.png"),
-    name: "Nipuni Madushani",
-    profession: "Back-end developer",
-    createdTime: "1 hour ago",
-    description:
-      "Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi",
-  },
-  {
-    id: "3",
-    image: require("../../assets/images/users/user4.png"),
-    name: "Guy Hawkins",
-    profession: "Flutter developer",
-    createdTime: "1 hour ago",
-    attachments: [
-      require("../../assets/images/files/file4.png"),
-      require("../../assets/images/files/file5.png"),
-      require("../../assets/images/files/file6.png"),
-    ],
-    description:
-      "Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi",
-  },
-  {
-    id: "4",
-    image: require("../../assets/images/users/user5.png"),
-    name: "Esther Howard",
-    profession: "Developer",
-    createdTime: "1 hour ago",
-    description:
-      "Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi",
-  },
-  {
-    id: "5",
-    image: require("../../assets/images/users/user6.png"),
-    name: "Albert Flores",
-    profession: "Designer",
-    createdTime: "1 hour ago",
-    description:
-      "Lorem ipsum dolor sit amet consectetudigni ssim lorem sed elementum sed. Ullamcorxcper ezcu id porttitor in. Consequat morbi odio morbi",
   },
 ];
 
@@ -509,31 +401,9 @@ const ProjectDetailScreen = ({ navigation, route }) => {
 
 const Comments = (props) => {
   const [dataList, setdataList] = useState([]);
-  // useEffect(() => {
-  //   console.log("heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
-
-  //   const fetchAllissues = async () => {
-  //     console.warn("fetch issues");
-
-  //     try {
-  //       const response = await fetch(
-  //         `http://192.168.1.14:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
-  //       );
-  //       const result = await response.json();
-  //       console.log("all issues");
-  //       console.log(result.payload[0]);
-  //       setdataList(result.payload[0]);
-  //       if (result.status === 200) {
-  //         // handle success
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching active projects:", error);
-  //     }
-  //   };
-
-  //   fetchAllissues();
-  // }, []);
-
+  const { item } = props;
+  console.warn("Comeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeents");
+  console.log(item);
   useFocusEffect(
     useCallback(() => {
       const fetchAllissues = async () => {
@@ -541,7 +411,7 @@ const Comments = (props) => {
 
         try {
           const response = await fetch(
-            `http://192.168.1.14:8080/api/v1/issue/project/01a2bcfd-6551-4a8c-81a2-9e34ae27c5e1`
+            `http://192.168.1.14:8080/api/v1/issue/project/${item.id}`
           );
           const result = await response.json();
           console.log("all issues");
@@ -561,14 +431,14 @@ const Comments = (props) => {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {totalAndAddInfo()}
+        {totalAndAddInfo(dataList?.length, item)}
         {/* {commentTitle()} */}
-        {comments(dataList)}
+        {comments(dataList, item)}
       </ScrollView>
       {/* {typeComment()} */}
     </View>
   );
-  function totalAndAddInfo() {
+  function totalAndAddInfo(size, project) {
     return (
       <View
         style={{
@@ -580,11 +450,11 @@ const Comments = (props) => {
           numberOfLines={1}
           style={{ flex: 1, ...Fonts.blackColor16Medium }}
         >
-          Total {commentsList.length} issues
+          Total {size == null ? 0 : size} issues
         </Text>
         <Touchable
           onPress={() => {
-            props.navigation.push("AddNewIssue");
+            props.navigation.push("AddNewIssue", { projectId: project });
           }}
           style={{ ...CommonStyles.rowAlignCenter }}
         >
@@ -648,7 +518,7 @@ const Comments = (props) => {
     );
   }
 
-  function comments(data) {
+  function comments(data, project) {
     console.log("dataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     console.log(data);
     const formatDate = (dateString) => {
@@ -676,7 +546,10 @@ const Comments = (props) => {
             <TouchableOpacity
               onPress={() => {
                 console.log("Comment on:", item.issueId);
-                props.navigation.navigate("AddNewComment", { issue: item });
+                props.navigation.navigate("AddNewComment", {
+                  issue: item,
+                  project: project,
+                });
               }}
               style={{ marginHorizontal: 6 }}
             >
@@ -690,7 +563,10 @@ const Comments = (props) => {
             <TouchableOpacity
               onPress={() => {
                 console.log("Edit issue:", item.issueId);
-                props.navigation.navigate("AddNewIssue", { issue: item });
+                props.navigation.navigate("AddNewIssue", {
+                  issue: item,
+                  projectId: project,
+                });
               }}
             >
               <MaterialIcons
@@ -719,16 +595,6 @@ const Comments = (props) => {
         contentContainerStyle={{ paddingTop: Sizes.fixPadding - 5.0 }}
         scrollEnabled={false}
       />
-    );
-  }
-
-  function commentTitle() {
-    return (
-      <Text
-        style={{ ...Fonts.blackColor16Medium, margin: Sizes.fixPadding * 2.0 }}
-      >
-        Comments({commentsList.length})
-      </Text>
     );
   }
 };
