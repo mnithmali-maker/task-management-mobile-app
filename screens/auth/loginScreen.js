@@ -15,19 +15,31 @@ import {
 } from "react-native";
 import React, { useState, useRef, useCallback } from "react";
 import { Colors, Fonts, Sizes, CommonStyles } from "../../constants/styles";
-import IntlPhoneInput from "react-native-intl-phone-input";
 import { Button } from "../../components/button";
 import { useFocusEffect } from "@react-navigation/native";
 import { ExitToast } from "../../components/exitToast";
 import { Ionicons } from "@expo/vector-icons";
+import { Formik } from "formik";
+import * as Yup from "yup";
+
+// ✅ Yup validation schema
+const LoginSchema = Yup.object().shape({
+  userName: Yup.string().required("User name is required"),
+  password: Yup.string().required("Password is required"),
+});
+
 const LoginScreen = ({ navigation }) => {
+  const [backClickCount, setBackClickCount] = useState(0);
+  const [isPasswordVisible, setPasswordVisible] = useState(false);
+
+  // ✅ Back handler logic
   const backAction = () => {
-    if (Platform.OS == "ios") {
+    if (Platform.OS === "ios") {
       navigation.addListener("beforeRemove", (e) => {
         e.preventDefault();
       });
     } else {
-      backClickCount == 1 ? BackHandler.exitApp() : _spring();
+      backClickCount === 1 ? BackHandler.exitApp() : _spring();
     }
     return true;
   };
@@ -50,17 +62,6 @@ const LoginScreen = ({ navigation }) => {
     }, 1000);
   }
 
-  const [userName, setUserName] = useState("");
-  const [password, setPassword] = useState("");
-  const [backClickCount, setBackClickCount] = useState(0);
-  const [isPasswordVisible, setPasswordVisible] = useState(false);
-
-  const phoneInput = useRef();
-
-  const togglePasswordVisibility = () => {
-    setPasswordVisible(!isPasswordVisible);
-  };
-
   return (
     <View style={{ flex: 1, backgroundColor: Colors.primaryColor }}>
       <StatusBar
@@ -76,6 +77,7 @@ const LoginScreen = ({ navigation }) => {
     </View>
   );
 
+  // ✅ Formik wrapped login form
   function loginInfo() {
     return (
       <View style={styles.loginInfoWrapper}>
@@ -89,38 +91,48 @@ const LoginScreen = ({ navigation }) => {
           }}
         >
           {authGirlImage()}
-          {userNameInfo()}
-          {passwordInfo()}
-          {loginButton()}
-          {/* <Button
-            onPress={() => {
+          <Formik
+            initialValues={{ userName: "", password: "" }}
+            validationSchema={LoginSchema}
+            onSubmit={(values) => {
+              console.log("Logging in with:", values);
               navigation.push("BottomTabBar");
             }}
-            buttonText="Login"
-          /> */}
+          >
+            {({
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              values,
+              errors,
+              touched,
+            }) => (
+              <>
+                {userNameInfo(
+                  values.userName,
+                  handleChange("userName"),
+                  handleBlur("userName"),
+                  errors.userName,
+                  touched.userName
+                )}
+                {passwordInfo(
+                  values.password,
+                  handleChange("password"),
+                  handleBlur("password"),
+                  errors.password,
+                  touched.password
+                )}
+                <Button onPress={handleSubmit} buttonText="Login" />
+              </>
+            )}
+          </Formik>
         </ScrollView>
       </View>
     );
   }
 
-  function handleLogin() {
-    if (!userName.trim() || !password.trim()) {
-      alert("User name and password cannot be empty.");
-      return;
-    }
-
-    // Proceed with navigation or API call
-    console.log("Logging in with:", { userName, password });
-    navigation.push("BottomTabBar");
-  }
-
-  function loginButton() {
-    console.log(userName);
-    console.log(password);
-    return <Button onPress={handleLogin} buttonText="Login" />;
-  }
-
-  function userNameInfo() {
+  // ✅ Username field with validation
+  function userNameInfo(value, onChange, onBlur, error, touched) {
     return (
       <View style={{ marginHorizontal: Sizes.fixPadding * 2.0 }}>
         <Text style={{ ...Fonts.blackColor15Medium }}>User name</Text>
@@ -131,17 +143,18 @@ const LoginScreen = ({ navigation }) => {
             style={{ ...Fonts.blackColor15Medium, padding: 0 }}
             cursorColor={Colors.primaryColor}
             selectionColor={Colors.primaryColor}
-            value={userName}
-            onChangeText={setUserName}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
           />
         </View>
+        {error && touched && <Text style={styles.errorText}>{error}</Text>}
       </View>
     );
   }
 
-  function passwordInfo() {
-    const [isPasswordVisible, setPasswordVisible] = useState(false);
-
+  // ✅ Password field with validation + toggle visibility
+  function passwordInfo(value, onChange, onBlur, error, touched) {
     return (
       <View style={{ marginHorizontal: Sizes.fixPadding * 2.0 }}>
         <Text style={{ ...Fonts.blackColor15Medium }}>Password</Text>
@@ -153,8 +166,9 @@ const LoginScreen = ({ navigation }) => {
               style={{ ...Fonts.blackColor15Medium, flex: 1, padding: 0 }}
               cursorColor={Colors.primaryColor}
               selectionColor={Colors.primaryColor}
-              value={password}
-              onChangeText={setPassword}
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
               secureTextEntry={!isPasswordVisible}
               autoCapitalize="none"
               autoCorrect={false}
@@ -172,25 +186,7 @@ const LoginScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
-    );
-  }
-
-  function userNameInfo() {
-    return (
-      <View style={{ marginHorizontal: Sizes.fixPadding * 2.0 }}>
-        <Text style={{ ...Fonts.blackColor15Medium }}>User name</Text>
-        <View style={styles.textFieldWrapper}>
-          <TextInput
-            placeholder="Enter user name"
-            placeholderTextColor={Colors.grayColor}
-            style={{ ...Fonts.blackColor15Medium, padding: 0 }}
-            cursorColor={Colors.primaryColor}
-            selectionColor={Colors.primaryColor}
-            value={userName}
-            onChangeText={setUserName}
-          />
-        </View>
+        {error && touched && <Text style={styles.errorText}>{error}</Text>}
       </View>
     );
   }
@@ -249,7 +245,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     margin: Sizes.fixPadding * 4.0,
   },
-
   textFieldWrapper: {
     backgroundColor: Colors.whiteColor,
     ...CommonStyles.shadow,
@@ -257,5 +252,10 @@ const styles = StyleSheet.create({
     paddingVertical: Sizes.fixPadding,
     paddingHorizontal: Sizes.fixPadding + 4.0,
     marginTop: Sizes.fixPadding,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 12,
+    marginTop: 4,
   },
 });
