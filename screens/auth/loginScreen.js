@@ -94,24 +94,20 @@ const LoginScreen = ({ navigation }) => {
           <Formik
             initialValues={{ userName: "", password: "" }}
             validationSchema={LoginSchema}
-            onSubmit={async (values, { setSubmitting }) => {
+            onSubmit={async (values, { setSubmitting, setFieldError }) => {
               try {
                 setSubmitting(true);
 
-                // Prepare payload
                 const payload = {
                   username: values.userName,
                   password: values.password,
                 };
 
-                // POST request
                 const response = await fetch(
                   "http://192.168.1.10:8080/api/v1/authenticate",
                   {
                     method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),
                   }
                 );
@@ -132,7 +128,7 @@ const LoginScreen = ({ navigation }) => {
                   );
                   navigation.replace("BottomTabBar");
                 } else {
-                  alert(result.message || "Invalid username or password");
+                  setFieldError("password", "Invalid user name or password");
                 }
               } catch (error) {
                 console.error("Login error:", error);
