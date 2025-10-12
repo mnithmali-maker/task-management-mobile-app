@@ -10,28 +10,52 @@ import {
   Modal,
   TouchableOpacity,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Colors, Fonts, Sizes, CommonStyles } from "../../constants/styles";
 import { Touchable } from "../../components/touchable";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { Circle } from "react-native-animated-spinkit";
+import { useFocusEffect } from "@react-navigation/native";
+
 const TeamScreen = ({ navigation }) => {
   const [memberList, setMemberList] = useState([]);
   const [isLoading, setisLoading] = useState(false);
-  useEffect(() => {
-    (async () => {
-      console.log("response");
-      setisLoading(true);
-      const response = await fetch("http://192.168.1.14:8080/api/v1/member", {
-        method: "GET",
-      });
-      const result = await response.json();
-      setisLoading(false);
-      setMemberList(result.payload[0]);
-    })();
-  }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const fetchMembers = async () => {
+        try {
+          console.log("Fetching members...");
+          setisLoading(true);
+          const response = await fetch(
+            "http://192.168.1.10:8080/api/v1/member",
+            {
+              method: "GET",
+            }
+          );
+          const result = await response.json();
+          if (isActive) {
+            console.log(result.payload[0][0].status);
+            setMemberList(result.payload[0]);
+          }
+        } catch (error) {
+          console.error("Error fetching members:", error);
+        } finally {
+          if (isActive) setisLoading(false);
+        }
+      };
+
+      fetchMembers();
+
+      // Cleanup when screen is unfocused
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bodyBackColor }}>
       {header()}

@@ -27,7 +27,7 @@ import {
 } from "../../constants/styles";
 import { Touchable } from "../../components/touchable";
 import TaskDeleteDialog from "../../components/taskDeleteDialog";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 // const taskCategoryList = [
 //   {
 //     id: "1",
@@ -78,12 +78,39 @@ const TaskScreen = ({ navigation, route }) => {
   const [completeTasks, setCompleteTasks] = useState([]);
   const [holdTasks, setHoldTasks] = useState([]);
   const [index, setIndex] = useState(0);
+  const [name, setName] = useState("");
+  const [greeting, setGreeting] = useState("");
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem("user");
+        const user = jsonValue != null ? JSON.parse(jsonValue) : null;
+        console.log("Logged User:", user);
+        setName(user.username);
+      } catch (e) {
+        console.error("Failed to fetch user:", e);
+      }
+    };
+
+    fetchUser();
+    const currentHour = new Date().getHours();
+
+    if (currentHour >= 5 && currentHour < 12) {
+      setGreeting("Good morning");
+    } else if (currentHour >= 12 && currentHour < 17) {
+      setGreeting("Good afternoon");
+    } else if (currentHour >= 17 && currentHour < 21) {
+      setGreeting("Good evening");
+    } else {
+      setGreeting("Good night");
+    }
+  }, []);
   // Fetch tasks based on category
   const fetchTasks = async (status) => {
     try {
       const response = await fetch(
-        `http://192.168.1.14:8080/api/v1/task/status/${status}`
+        `http://192.168.1.10:8080/api/v1/task/status/${status}`
       );
       const result = await response.json();
 
@@ -245,11 +272,9 @@ const TaskScreen = ({ navigation, route }) => {
             style={{ width: 60, height: 60, borderRadius: 30 }}
           />
           <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
-            <Text style={Fonts.whiteColor18SemiBold}>
-              Hello Nipuni Madushani
-            </Text>
+            <Text style={Fonts.whiteColor18SemiBold}>Hello {name}</Text>
             <Text style={{ ...Fonts.whiteColor15Medium, opacity: 0.8 }}>
-              Good morning
+              {greeting}
             </Text>
           </View>
           <Touchable onPress={() => navigation.push("Search")}>
@@ -325,66 +350,66 @@ const TaskCategories = ({ categoryRef }) => {
   const [taskCategoryList, setTaskCategoryList] = useState([]);
 
   //  get dashbaord summary details .......
-useEffect(() => {
-  const fetchActiveProjects = async () => {
-    try {
-      const response = await fetch(
-        `http://192.168.8.103:8080/api/v1/project/taskDashboard`
-      );
-      const result = await response.json();
+  useEffect(() => {
+    const fetchActiveProjects = async () => {
+      try {
+        const response = await fetch(
+          `http://192.168.8.103:8080/api/v1/project/taskDashboard`
+        );
+        const result = await response.json();
 
-      if (result.status === 200) {
-        const projects = result.payload[0];
+        if (result.status === 200) {
+          const projects = result.payload[0];
 
-        // transform response
-        const transformed = projects.map((item) => {
-          let icon;
-          switch (item.id) {
-            case 1:
-              icon = require("../../assets/images/icons/list.png");
-              break;
-            case 2:
-              icon = require("../../assets/images/icons/calendar.png");
-              break;
-            case 3:
-              icon = require("../../assets/images/icons/complete.png");
-              break;
-            case 4:
-              icon = require("../../assets/images/icons/team.png");
-              break;
-            default:
-              icon = null;
-          }
+          // transform response
+          const transformed = projects.map((item) => {
+            let icon;
+            switch (item.id) {
+              case 1:
+                icon = require("../../assets/images/icons/list.png");
+                break;
+              case 2:
+                icon = require("../../assets/images/icons/calendar.png");
+                break;
+              case 3:
+                icon = require("../../assets/images/icons/complete.png");
+                break;
+              case 4:
+                icon = require("../../assets/images/icons/team.png");
+                break;
+              default:
+                icon = null;
+            }
 
-          return {
-            id: String(item.id),
-            title:
-              item.title === "PENDING"
-                ? "In-progress"
-                : item.title.charAt(0).toUpperCase() + item.title.slice(1).toLowerCase(),
-            description:
-              item.id === 4
-                ? `${item.description} member`
-                : `${item.description ?? 0} task`,
-            bgColor: Colors[item.bgColor.split(".")[1]], // convert "Colors.purpleColor" → Colors.purpleColor
-            bgImageColor: item.bgImageColor,
-            icon,
-          };
-        });
+            return {
+              id: String(item.id),
+              title:
+                item.title === "PENDING"
+                  ? "In-progress"
+                  : item.title.charAt(0).toUpperCase() +
+                    item.title.slice(1).toLowerCase(),
+              description:
+                item.id === 4
+                  ? `${item.description} member`
+                  : `${item.description ?? 0} task`,
+              bgColor: Colors[item.bgColor.split(".")[1]], // convert "Colors.purpleColor" → Colors.purpleColor
+              bgImageColor: item.bgImageColor,
+              icon,
+            };
+          });
 
-        setTaskCategoryList(transformed);
-      } else {
-        setTaskCategoryList([]);
-        console.warn(result.errorMessages?.[0] || "No active projects found");
+          setTaskCategoryList(transformed);
+        } else {
+          setTaskCategoryList([]);
+          console.warn(result.errorMessages?.[0] || "No active projects found");
+        }
+      } catch (error) {
+        console.error("Error fetching active projects:", error);
       }
-    } catch (error) {
-      console.error("Error fetching active projects:", error);
-    }
-  };
+    };
 
-  fetchActiveProjects();
-}, []);
-
+    fetchActiveProjects();
+  }, []);
 
   const renderItem = ({ item }) => (
     <View

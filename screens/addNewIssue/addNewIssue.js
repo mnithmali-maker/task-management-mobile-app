@@ -61,9 +61,9 @@ const AddNewIssue = ({ navigation, route }) => {
   const findCommentsByIssue = async (id) => {
     setisLoading(true);
     try {
-      console.log(`http://192.168.1.14:8080/api/v1/issue/${id}`);
+      console.log(`http://192.168.1.10:8080/api/v1/issue/${id}`);
       const response = await fetch(
-        `http://192.168.1.14:8080/api/v1/issue/${id}`,
+        `http://192.168.1.10:8080/api/v1/issue/${id}`,
         {
           method: "GET",
           headers: {
@@ -240,7 +240,7 @@ const AddNewIssue = ({ navigation, route }) => {
 
       formData.append("issue", JSON.stringify(issue));
 
-      const response = await fetch("http://192.168.1.14:8080/api/v1/issue", {
+      const response = await fetch("http://192.168.1.10:8080/api/v1/issue", {
         method: "POST",
         body: formData,
       });

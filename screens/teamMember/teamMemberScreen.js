@@ -25,6 +25,8 @@ import {
   Dialog,
   Toast,
 } from "react-native-alert-notification";
+import * as FileSystem from "expo-file-system";
+
 import { Circle } from "react-native-animated-spinkit";
 const teamOptions = [
   "Designer team",
@@ -39,7 +41,7 @@ const AddNewMemberScreen = ({ navigation, route }) => {
   // Check if we are in update mode
   const isUpdateMode = route.params?.member ? true : false;
   const existingMember = route.params?.member || null;
-
+  console.warn(existingMember?.status);
   const pickDocument = async (setFieldValue) => {
     try {
       const permission =
@@ -111,7 +113,7 @@ const AddNewMemberScreen = ({ navigation, route }) => {
   const validationSchema = Yup.object().shape({
     memberName: Yup.string().required("Member name is required"),
     email: Yup.string().email("Invalid email").required("Email is required"),
-    // attachment: Yup.object().required("Attachment is required"),
+    attachment: Yup.object().required("Attachment is required"),
     // selectedTeams: Yup.array().min(1, "Select at least one team"),
   });
 
@@ -135,97 +137,106 @@ const AddNewMemberScreen = ({ navigation, route }) => {
 
     return mimeMap[extension] || "application/octet-stream"; // fallback if unknown
   };
+
   const handleSubmit = async (values) => {
     console.log("handleSubmit");
-    console.log(values);
     setisLoading(true);
-    let formData = new FormData();
-    console.log("file name");
-    console.log(values.attachment);
-    let fileArray = [values.attachment];
-    for (let i = 0; i < fileArray.length; i++) {
-      console.log("file array");
-      const file = fileArray[i];
-      console.log(file);
-      const fileUri = file.uri;
-      const mimeType = getMimeType(file.name || file.uri);
-      const safeName =
-        file.name?.replace(/[^a-zA-Z0-9._-]/g, "_") ||
-        `file_${Date.now()}_${i}`;
 
-      // console.log("✅ Final file info:", {
-      //   fileUri,
-      //   name: safeName,
-      //   type: mimeType,
-      // });
+    try {
+      const formData = new FormData();
 
-      // If something critical is missing, skip the file
-      if (!fileUri || !mimeType || !safeName) {
-        // console.warn(`❌ Skipping invalid file at index ${i}`, file);
-        continue;
-      }
+      const file = values.attachment;
 
-      console.log("im hereeeeeeeeeeeeee");
-      console.log(fileUri);
-      console.log(safeName);
-      console.log(mimeType);
-      formData.append("files", {
-        uri: fileUri,
-        name: safeName,
-        type: mimeType,
-      });
-      console.log("im vyeeeeeeeeeeeee");
+      // ✅ Step 1: Prepare the member JSON
       const member = {
-        id: null,
+        id: isUpdateMode ? values.id : null,
         name: values.memberName,
         email: values.email,
+        status: values.status,
       };
 
+      // ✅ Step 2: If attachment exists, handle it
+      if (file) {
+        let fileUri = file.uri;
+        let safeName =
+          file.name?.replace(/[^a-zA-Z0-9._-]/g, "_") ||
+          file.imageOriginalName ||
+          `file_${Date.now()}`;
+        let mimeType = getMimeType(file.name || file.mimeType || "jpg");
+
+        // ⚡ CASE 1: existing image (base64)
+        if (!file.uri && file.data) {
+          console.log("Converting base64 image to file...");
+          const base64Data = file.data.startsWith("data:")
+            ? file.data.split(",")[1]
+            : file.data;
+          const filePath = `${FileSystem.cacheDirectory}${safeName}.jpg`;
+
+          await FileSystem.writeAsStringAsync(filePath, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          fileUri = filePath;
+        }
+
+        // ✅ Append to formData
+        formData.append("files", {
+          uri: fileUri,
+          name: safeName,
+          type: mimeType,
+        });
+      }
+
+      // ✅ Step 3: Append member JSON
       formData.append("member", JSON.stringify(member));
-      console.log("im vyeeeeeeeeeeeee4343");
-      const response = await fetch("http://192.168.1.14:8080/api/v1/member", {
+
+      // ✅ Step 4: API call
+      const response = await fetch("http://192.168.1.10:8080/api/v1/member", {
         method: "POST",
         body: formData,
       });
-      console.log("im 5555");
+
       const result = await response.json();
-      console.warn(result);
+      console.log("Response:", result);
+
       if (result.status == 200) {
         setisLoading(false);
         Dialog.show({
           type: ALERT_TYPE.SUCCESS,
           title: "Success",
-          textBody: "Team Mmeber is added successfully",
+          textBody: isUpdateMode
+            ? "Team Member updated successfully"
+            : "Team Member added successfully",
           button: "Close",
-          autoClose: 2000, // auto-close after 3 seconds
-          closeOnOverlayTap: true,
+          autoClose: 2000,
         });
-
-        setTimeout(() => {
-          navigation.pop(); // or navigation.pop()
-        }, 2000);
+        setTimeout(() => navigation.pop(), 2000);
       } else {
-        setisLoading(false);
-        Dialog.show({
-          type: ALERT_TYPE.DANGER,
-          title: "Error",
-          textBody: "Something went wrong!",
-          button: "Close",
-          autoClose: 3000,
-          closeOnOverlayTap: true,
-        });
+        throw new Error("Server returned error");
       }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setisLoading(false);
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: "Error",
+        textBody: "Something went wrong while uploading!",
+        button: "Close",
+        autoClose: 3000,
+      });
     }
   };
+
   return (
     <AlertNotificationRoot>
       <Formik
         initialValues={{
-          memberName: existingMember?.name || "",
-          email: existingMember?.email || "",
-          attachment: existingMember?.attachment || "",
+          id: isUpdateMode ? existingMember.id : null,
+          memberName: isUpdateMode ? existingMember?.name : "",
+          email: isUpdateMode ? existingMember?.email : "",
+          attachment: isUpdateMode ? existingMember?.attachment : "",
           // selectedTeams: [],
-          isActive: true,
+          status: isUpdateMode ? existingMember?.status : true,
         }}
         enableReinitialize={true}
         validationSchema={validationSchema}
@@ -354,8 +365,8 @@ const AddNewMemberScreen = ({ navigation, route }) => {
                   Status
                 </Text>
                 <Switch
-                  value={values.isActive}
-                  onValueChange={(val) => setFieldValue("isActive", val)}
+                  value={values.status}
+                  onValueChange={(val) => setFieldValue("status", val)}
                   trackColor={{
                     false: Colors.grayColor,
                     true: Colors.primaryColor,
@@ -363,7 +374,7 @@ const AddNewMemberScreen = ({ navigation, route }) => {
                   thumbColor={Colors.whiteColor}
                 />
                 <Text style={{ marginLeft: 8, ...Fonts.blackColor15Medium }}>
-                  {values.isActive ? "Active" : "Inactive"}
+                  {values.status ? "Active" : "Inactive"}
                 </Text>
               </View>
 
@@ -398,9 +409,14 @@ const AddNewMemberScreen = ({ navigation, route }) => {
                     ]}
                   >
                     <Image
-                      source={{ uri: values.attachment.uri }}
+                      source={{
+                        uri: values.attachment.data
+                          ? `data:${values.attachment.mimeType};base64,${values.attachment.data}`
+                          : values.attachment.uri, // fallback for picked file
+                      }}
                       style={{ width: 70, height: 70, borderRadius: 6 }}
                     />
+
                     <Text
                       style={{
                         ...Fonts.blackColor14Regular,
@@ -408,7 +424,7 @@ const AddNewMemberScreen = ({ navigation, route }) => {
                         marginLeft: 8,
                       }}
                     >
-                      {values.attachment.fileName || "Selected File"}
+                      {values.attachment.imageOriginalName || "Selected File"}
                     </Text>
                     <Touchable
                       onPress={() => setFieldValue("attachment", null)}

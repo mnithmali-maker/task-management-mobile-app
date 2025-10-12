@@ -21,7 +21,7 @@ import { ExitToast } from "../../components/exitToast";
 import { Ionicons } from "@expo/vector-icons";
 import { Formik } from "formik";
 import * as Yup from "yup";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 // ✅ Yup validation schema
 const LoginSchema = Yup.object().shape({
   userName: Yup.string().required("User name is required"),
@@ -94,9 +94,52 @@ const LoginScreen = ({ navigation }) => {
           <Formik
             initialValues={{ userName: "", password: "" }}
             validationSchema={LoginSchema}
-            onSubmit={(values) => {
-              console.log("Logging in with:", values);
-              navigation.push("BottomTabBar");
+            onSubmit={async (values, { setSubmitting }) => {
+              try {
+                setSubmitting(true);
+
+                // Prepare payload
+                const payload = {
+                  username: values.userName,
+                  password: values.password,
+                };
+
+                // POST request
+                const response = await fetch(
+                  "http://192.168.1.10:8080/api/v1/authenticate",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                  }
+                );
+
+                const result = await response.json();
+                console.log("Login response:", result);
+
+                if (response.ok) {
+                  let user = {
+                    username: result.username,
+                    firstName: result.firstName,
+                    lastName: result.lastName,
+                  };
+                  await AsyncStorage.setItem("user", JSON.stringify(user));
+                  await AsyncStorage.setItem(
+                    "token",
+                    JSON.stringify(result.token)
+                  );
+                  navigation.replace("BottomTabBar");
+                } else {
+                  alert(result.message || "Invalid username or password");
+                }
+              } catch (error) {
+                console.error("Login error:", error);
+                alert("Something went wrong. Please try again.");
+              } finally {
+                setSubmitting(false);
+              }
             }}
           >
             {({
